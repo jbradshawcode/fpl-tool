@@ -89,14 +89,24 @@ def rank_players(df: pd.DataFrame, metric: str, mins_threshold: int, ascending: 
 
 
 if __name__ == "__main__":
+    # Fetch data from the fantasy.premierleague.com API
     data = fetch_fpl_data(url=url)
-    players_df = preprocess_players_df(df=pd.DataFrame(data["elements"]).set_index("id").sort_index(ascending=True))
-    teams_df = pd.DataFrame(data["teams"]).rename(columns={"name": "team_name"})
-    positions_df = pd.DataFrame(data["element_types"]).rename(columns={"singular_name": "position"})
-    
-    players_df["team_name"] = players_df.merge(teams_df, left_on="team", right_on="id")["team_name"]
-    players_df["position"] = players_df.merge(positions_df, left_on="element_type", right_on="id")["position"]
 
+    # Pre-process fetched data
+    players_df = preprocess_players_df(df=pd.DataFrame(data["elements"]).set_index("id").sort_index(ascending=True))
+    teams_df = pd.DataFrame(data["teams"])
+    positions_df = pd.DataFrame(data["element_types"])
+
+    # Map team_name from id
+    team_map = teams_df.set_index("id")["name"]
+    players_df["team_name"] = players_df["team"].map(team_map)
+
+    # Map position from id
+    positions_map = positions_df.set_index("id")["singular_name"]
+    players_df["position"] = players_df["element_type"].map(positions_map)
+
+    # Filter out unsupported metrics
     players_df = players_df[supported_metrics]
 
+    # Rank players
     rank_players(df=players_df, metric="assists", mins_threshold=90)
