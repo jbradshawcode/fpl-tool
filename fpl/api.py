@@ -1,13 +1,11 @@
 import logging
 import requests
 from typing import Dict, Optional
-
-
-BASE_URL = "https://fantasy.premierleague.com/api/"
+from .config import BASE_URL
 
 
 def fetch_data(endpoint: str) -> Optional[Dict]:
-    """Fetch data from the FPL API and return JSON."""
+    """Fetch data from the FPL API and return JSON as dict."""
     url = f"{BASE_URL}{endpoint}"
     try:
         response = requests.get(url, timeout=10)

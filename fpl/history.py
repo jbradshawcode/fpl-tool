@@ -3,17 +3,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from tqdm import tqdm
 from typing import Dict, List
 from .api import fetch_data
-
-
-SUPPORTED_HISTORY_METRICS = [
-    "element", "opponent_team_name", "total_points", "round", "minutes",
-    "goals_scored", "assists", "clean_sheets", "goals_conceded", 
-    "own_goals", "penalties_saved", "penalties_missed", "yellow_cards", 
-    "red_cards", "saves", "bonus", "bps", 
-    "clearances_blocks_interceptions", "recoveries", "tackles", 
-    "defensive_contribution", "starts", "expected_goals", "expected_assists", 
-    "expected_goal_involvements", "expected_goals_conceded",
-]
+from .config import SUPPORTED_HISTORY_METRICS
 
 
 def fetch_player_history(element_id: int, team_map: Dict[int, str]) -> pd.DataFrame:
