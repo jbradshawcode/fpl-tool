@@ -1,5 +1,7 @@
 import logging
+import numpy as np
 import pandas as pd
+from copy import deepcopy
 from fpl import api, preprocessing, history, ranking
 from utils.update_guard import should_update, mark_updated
 
@@ -25,16 +27,61 @@ def main():
 
     # Calculate expected points
     history_df = history.calculate_expected_points(history_df, players_df, scoring=data["game_config"]["scoring"])
-    players_df["expected_points"] = history.aggregate_expected_points(history_df)
 
-    # Rankings
-    top_assisters = ranking.rank_players(players_df, metric="assists", mins_threshold=90)
-    top_scorers = ranking.rank_players(players_df, metric="goals_scored", mins_threshold=90)
-    logging.info(f"Top assisters:\n{top_assisters.head()}")
-    logging.info(f"Top scorers:\n{top_scorers.head()}")
+    # Assess players
+    expected_points_per_90(
+        history_df=history_df,
+        players_df=players_df,
+        position="FWD",
+        mins_threshold=60,
+        time_period=5,
+    )
 
-    print(history_df[['element', 'round', 'position', 'minutes', 'expected_points', 'total_points']].head())
 
+### DEV WORK HERE ###
+def expected_points_per_90(
+        history_df: pd.DataFrame,
+        players_df: pd.DataFrame,
+        position: str = None,
+        mins_threshold: float = 60,
+        time_period: int = None,
+    ):
+    """
+    Filter players by average minutes played over last `time_period` rounds,
+    optionally by position, and sort by expected points.
+    """
+    # Make a copy of history_df to avoid modifying original
+    df = deepcopy(history_df)
+
+    # Filter by recent rounds if time_period is specified
+    if time_period is not None:
+        latest_round = history_df['round'].max()
+        recent_rounds = list(range(latest_round - time_period + 1, latest_round + 1))
+        df = df[df['round'].isin(recent_rounds)]
+
+    # Filter by position if specified
+    if position is not None:
+        df = df[df['pos_abbr'] == position]
+
+    # Group by player
+    grouped = df.groupby("element").agg(
+        avg_minutes=("minutes", "mean"),
+        total_expected_points=("expected_points", "sum"),
+        expected_points_per_90=("expected_points_per_90", "mean"),
+    )
+
+    # Apply minutes filter
+    grouped = grouped[grouped["avg_minutes"] >= mins_threshold]
+
+    # Merge with players_df for names, teams, etc.
+    merged = grouped.merge(players_df, left_index=True, right_index=True, how="left")
+
+    # Sort by expected points
+    merged = merged.sort_values("total_expected_points", ascending=False)
+
+    output_cols = ["full_name", "total_expected_points", "expected_points_per_90", "total_points", "now_cost", "team_name", "position"]
+    return merged.reset_index(drop=False)[output_cols]
+### END DEV WORK ###
 
 if __name__ == "__main__":
     main()

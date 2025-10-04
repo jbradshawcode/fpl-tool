@@ -80,6 +80,12 @@ def calculate_expected_points(history_df: pd.DataFrame, players_df: pd.DataFrame
         long_short_points
     )
 
+    history_df["expected_points_per_90"] = np.where(
+        history_df["minutes"] != 0,
+        history_df["expected_points"] / history_df["minutes"],
+        0,
+    ) * 90
+
     return history_df
 
 
