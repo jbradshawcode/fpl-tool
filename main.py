@@ -58,7 +58,7 @@ def expected_points_per_90(
         latest_round = history_df['round'].max()
         recent_rounds = list(range(latest_round - time_period + 1, latest_round + 1))
         df = df[df['round'].isin(recent_rounds)]
-
+    
     # Filter by position if specified
     if position is not None:
         df = df[df['pos_abbr'] == position]
