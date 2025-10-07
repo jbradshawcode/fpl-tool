@@ -1,7 +1,7 @@
 import logging
-import numpy as np
 import pandas as pd
 from copy import deepcopy
+from tabulate import tabulate
 from fpl import api, preprocessing, history, ranking
 from utils.update_guard import should_update, mark_updated
 
@@ -29,13 +29,14 @@ def main():
     history_df = history.calculate_expected_points(history_df, players_df, scoring=data["game_config"]["scoring"])
 
     # Assess players
-    expected_points_per_90(
+    df = expected_points_per_90(
         history_df=history_df,
         players_df=players_df,
         position="FWD",
         mins_threshold=60,
         time_period=5,
     )
+    display_df(df)
 
 
 ### DEV WORK HERE ###
@@ -66,8 +67,9 @@ def expected_points_per_90(
     # Group by player
     grouped = df.groupby("element").agg(
         avg_minutes=("minutes", "mean"),
-        total_expected_points=("expected_points", "sum"),
         expected_points_per_90=("expected_points_per_90", "mean"),
+        actual_points_per_90=("actual_points_per_90", "mean"),
+        percentage_of_mins_played=("percentage_of_mins_played", "mean"),
     )
 
     # Apply minutes filter
@@ -76,11 +78,20 @@ def expected_points_per_90(
     # Merge with players_df for names, teams, etc.
     merged = grouped.merge(players_df, left_index=True, right_index=True, how="left")
 
-    # Sort by expected points
-    merged = merged.sort_values("total_expected_points", ascending=False)
+    # Sort by expected points per 90
+    merged = merged.sort_values("expected_points_per_90", ascending=False)
 
-    output_cols = ["full_name", "total_expected_points", "expected_points_per_90", "total_points", "now_cost", "team_name", "position"]
-    return merged.reset_index(drop=False)[output_cols]
+    # Reset index and return
+    return merged.reset_index(drop=False)
+
+
+def display_df(df: pd.DataFrame):
+    df["percentage_of_mins_played"] = (df["percentage_of_mins_played"] * 100).map("{:.2f}%".format)
+
+    output_cols = ["full_name", "expected_points_per_90", "actual_points_per_90", "percentage_of_mins_played", "now_cost", "team_name", "position"]
+    print(tabulate(df[output_cols], headers='keys', tablefmt='psql'))
+
+
 ### END DEV WORK ###
 
 if __name__ == "__main__":

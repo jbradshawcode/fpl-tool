@@ -92,6 +92,18 @@ def calculate_expected_points(history_df: pd.DataFrame, players_df: pd.DataFrame
         0,
     )
 
+    history_df["actual_points_per_90"] = np.where(
+        history_df["minutes"] != 0,
+        np.where(
+            history_df["red_cards"] == 0,
+            (history_df["total_points"] / history_df["minutes"]) * 90,
+            history_df["total_points"],
+        ),        
+        0,
+    )
+
+    history_df["percentage_of_mins_played"] = history_df["minutes"] / 90
+
     return history_df
 
 
