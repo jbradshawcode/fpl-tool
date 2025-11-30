@@ -11,28 +11,6 @@ import pandas as pd
 from fpl.config import SUPPORTED_METRICS
 
 
-def preprocess_players_df(df: pd.DataFrame) -> pd.DataFrame:
-    """Clean and enrich the raw players DataFrame.
-
-    Adds a combined full name, converts the cost into millions, and removes
-    unused name fields.
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-        Raw DataFrame of FPL players as returned by the API.
-
-    Returns
-    -------
-    pd.DataFrame
-        Cleaned DataFrame with a full name column and adjusted cost.
-
-    """
-    df = df.copy()
-    df["now_cost"] = df["now_cost"] / 10  # convert to millions
-    return df
-
-
 def build_players_df(data: dict) -> tuple[pd.DataFrame, pd.Series]:
     """Construct a cleaned players DataFrame with readable team and position fields.
 
@@ -52,10 +30,7 @@ def build_players_df(data: dict) -> tuple[pd.DataFrame, pd.Series]:
             Mapping from team ID to team name.
 
     """
-    players_df = preprocess_players_df(
-        pd.DataFrame(data["elements"]).set_index("id").sort_index(),
-    )
-
+    players_df = pd.DataFrame(data["elements"]).set_index("id").sort_index()
     teams_df = pd.DataFrame(data["teams"])
     positions_df = pd.DataFrame(data["element_types"])
 

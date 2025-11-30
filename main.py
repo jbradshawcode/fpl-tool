@@ -154,8 +154,9 @@ def display_df(df: pd.DataFrame) -> None:
         percentage, and player metadata.
 
     """
-    df["expected_points_per_90"] = df["expected_points_per_90"].round(2)
     df["actual_points_per_90"] = df["actual_points_per_90"].round(2)
+    df["expected_points_per_90"] = df["expected_points_per_90"].round(2)
+    df["now_cost"] = df["now_cost"] / 10  # convert to millions
     df["percentage_of_mins_played"] = (df["percentage_of_mins_played"] * 100).map(
         "{:.2f}%".format,
     )
@@ -167,17 +168,15 @@ def display_df(df: pd.DataFrame) -> None:
         "percentage_of_mins_played",
         "now_cost",
         "team_name",
-        "position",
     ]
     output_df = df[output_cols].rename(
         columns={
             "web_name": "Player",
-            "expected_points_per_90": "xPoints/90",
-            "actual_points_per_90": "Points/90",
-            "percentage_of_mins_played": "% of Mins Played",
+            "expected_points_per_90": "xPoints\n/90",
+            "actual_points_per_90": "Points\n/90",
+            "percentage_of_mins_played": "% of Mins\nPlayed",
             "now_cost": "Cost",
             "team_name": "Team",
-            "position": "Position",
         },
     )
     logger.info("\n%s", tabulate(output_df, headers="keys", tablefmt="psql"))
