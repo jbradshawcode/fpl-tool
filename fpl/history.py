@@ -4,7 +4,6 @@ This module provides:
 - Concurrent download of individual player history records
 - Mapping and cleaning of FPL API history fields
 - Vectorised calculation of expected points and per-90 metrics
-- Aggregation helpers for summarising expected returns
 """
 
 from concurrent.futures import ThreadPoolExecutor, as_completed

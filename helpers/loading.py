@@ -85,17 +85,26 @@ def save_data(data: dict) -> None:
     missing_keys = [key for key in required_keys if key not in data]
     if missing_keys:
         raise ValueError(f"Missing required keys in data dict: {missing_keys}")
+    
+    required_keys = ['players_df', 'history_df', 'scoring']
+    missing_keys = [key for key in required_keys if key not in data]
+    if missing_keys:
+        raise ValueError(f"Missing required keys in data dict: {missing_keys}")
 
     data_dir = Path("data")
     data_dir.mkdir(parents=True, exist_ok=True)
-    
-    # Save DataFrames to CSV
-    data["players_df"].to_csv(data_dir / "players_data.csv", index=True, index_label='id')
-    data["history_df"].to_csv(data_dir / "player_histories.csv", index=False)
-    
-    # Save scoring data to JSON
-    with (data_dir / "scoring.json").open("w") as f:
-        json.dump(data["scoring"], f, indent=4)
+
+    try:
+        # Save DataFrames to CSV
+        data["players_df"].to_csv(data_dir / "players_data.csv", index=True, index_label='id')
+        data["history_df"].to_csv(data_dir / "player_histories.csv", index=False)
+
+        # Save scoring data to JSON
+        with (data_dir / "scoring.json").open("w") as f:
+            json.dump(data["scoring"], f, indent=4)
+    except Exception as e:
+        logger.error(f"Failed to save data: {e}")
+        raise
 
 
 def load_parameters() -> dict:
