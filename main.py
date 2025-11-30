@@ -10,10 +10,6 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(me
 
 def main():
     data = api.fetch_data("bootstrap-static/")
-    if not data:
-        logging.error("No bootstrap data")
-        return
-
     players_df, team_map = preprocessing.build_players_df(data)
 
     # Fetch/update histories
@@ -32,14 +28,13 @@ def main():
     df = expected_points_per_90(
         history_df=history_df,
         players_df=players_df,
-        position="FWD",
+        position="DEF",
         mins_threshold=60,
         time_period=5,
-    )
+    ).head(10)
     display_df(df)
 
 
-### DEV WORK HERE ###
 def expected_points_per_90(
         history_df: pd.DataFrame,
         players_df: pd.DataFrame,
@@ -81,15 +76,29 @@ def expected_points_per_90(
     # Sort by expected points per 90
     merged = merged.sort_values("expected_points_per_90", ascending=False)
 
-    # Reset index and return
-    return merged.reset_index(drop=False)
+    # Reset index
+    merged = merged.reset_index(drop=False)
+    merged.index = merged.index + 1  # Start index at 1 for display
+
+    return merged
 
 
 def display_df(df: pd.DataFrame):
+    df["expected_points_per_90"] = df["expected_points_per_90"].round(2)
+    df["actual_points_per_90"] = df["actual_points_per_90"].round(2)
     df["percentage_of_mins_played"] = (df["percentage_of_mins_played"] * 100).map("{:.2f}%".format)
 
     output_cols = ["full_name", "expected_points_per_90", "actual_points_per_90", "percentage_of_mins_played", "now_cost", "team_name", "position"]
-    print(tabulate(df[output_cols], headers='keys', tablefmt='psql'))
+    output_df = df[output_cols].rename(columns={
+        "full_name": "Player",
+        "expected_points_per_90": "xPoints/90",
+        "actual_points_per_90": "Points/90",
+        "percentage_of_mins_played": "% of Mins Played",
+        "now_cost": "Cost",
+        "team_name": "Team",
+        "position": "Position"
+    })
+    print(tabulate(output_df, headers='keys', tablefmt='psql'))
 
 
 ### END DEV WORK ###

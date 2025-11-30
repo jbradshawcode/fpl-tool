@@ -1,4 +1,8 @@
 # Ideas for Features / Capabilities
 
-- Fix red card bug so that:
-    - If a player receieves a red card, their expected_goals_against is updated to align with the goals against from the duration they started playing that game, til the final whistle (how to do this if, e.g., subbed on at 20mins? might have to accept a possible edge case here).
+- Definitely need to aggregate stats before doing per 90 stats
+    - Bad edge case - a player plays 90 mins in four games, then 1 min in the 5th
+    - Results in huge xPoints, very disproportionate
+- Write something that adjusts for non-pens
+- Figure out avg numbers of DEFCON points for a single fpl point
+    - use this to do xDEFCON
