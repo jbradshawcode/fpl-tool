@@ -13,7 +13,7 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
-from fpl.api import fetch_data
+from helpers.api import fetch_data
 from helpers.config import POS_MAP, SUPPORTED_HISTORY_METRICS
 from helpers.loading import load_parameters
 
