@@ -48,7 +48,7 @@ def main() -> None:
         mark_updated()
     else:
         logger.info("Loading data from local files...")
-        players_df = pd.read_csv("data/players_data.csv")
+        players_df = pd.read_csv("data/players_data.csv", index_col='id')
         history_df = pd.read_csv("data/player_histories.csv")
 
         with Path("data/scoring.json").open() as f:
@@ -65,7 +65,7 @@ def main() -> None:
     df = expected_points_per_90(
         history_df=history_df,
         players_df=players_df,
-        position="FWD",
+        position="MID",
         mins_threshold=60,
         time_period=5,
     ).head(10)
@@ -161,7 +161,7 @@ def display_df(df: pd.DataFrame) -> None:
     )
 
     output_cols = [
-        "full_name",
+        "web_name",
         "expected_points_per_90",
         "actual_points_per_90",
         "percentage_of_mins_played",
@@ -171,7 +171,7 @@ def display_df(df: pd.DataFrame) -> None:
     ]
     output_df = df[output_cols].rename(
         columns={
-            "full_name": "Player",
+            "web_name": "Player",
             "expected_points_per_90": "xPoints/90",
             "actual_points_per_90": "Points/90",
             "percentage_of_mins_played": "% of Mins Played",

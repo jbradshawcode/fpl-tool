@@ -81,7 +81,7 @@ def save_data(data: dict) -> None:
     data_dir.mkdir(parents=True, exist_ok=True)
     
     # Save DataFrames to CSV
-    data["players_df"].to_csv(data_dir / "players_data.csv", index=False)
+    data["players_df"].to_csv(data_dir / "players_data.csv", index=True, index_label='id')
     data["history_df"].to_csv(data_dir / "player_histories.csv", index=False)
     
     # Save scoring data to JSON

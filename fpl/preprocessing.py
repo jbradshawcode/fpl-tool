@@ -29,9 +29,8 @@ def preprocess_players_df(df: pd.DataFrame) -> pd.DataFrame:
 
     """
     df = df.copy()
-    df["full_name"] = df["first_name"] + " " + df["second_name"]
     df["now_cost"] = df["now_cost"] / 10  # convert to millions
-    return df.drop(columns=["first_name", "second_name"])
+    return df
 
 
 def build_players_df(data: dict) -> tuple[pd.DataFrame, pd.Series]:

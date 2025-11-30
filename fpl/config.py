@@ -19,7 +19,7 @@ POS_MAP = {
 
 # Columns for player profiles
 PROFILE_COLS = [
-    "full_name",
+    "web_name",
     "team_name",
     "position",
     "now_cost",
@@ -44,7 +44,7 @@ SUPPORTED_METRICS = [
     "expected_goals_conceded_per_90",
     "expected_goals_per_90",
     "form",
-    "full_name",
+    "web_name",
     "goals_conceded",
     "goals_conceded_per_90",
     "goals_scored",
