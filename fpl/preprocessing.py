@@ -1,23 +1,56 @@
+"""Player-level preprocessing utilities for Fantasy Premier League data.
+
+This module provides:
+- Cleaning and enrichment of the raw FPL player dataset
+- Mapping of teams and positions to readable names
+- Construction of a filtered players DataFrame restricted to supported metrics
+"""
+
 import pandas as pd
 
 from fpl.config import SUPPORTED_METRICS
 
 
 def preprocess_players_df(df: pd.DataFrame) -> pd.DataFrame:
-    """Clean up player dataframe: add full name, adjust cost."""
+    """Clean and enrich the raw players DataFrame.
+
+    Adds a combined full name, converts the cost into millions, and removes
+    unused name fields.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Raw DataFrame of FPL players as returned by the API.
+
+    Returns
+    -------
+    pd.DataFrame
+        Cleaned DataFrame with a full name column and adjusted cost.
+
+    """
     df = df.copy()
     df["full_name"] = df["first_name"] + " " + df["second_name"]
     df["now_cost"] = df["now_cost"] / 10  # convert to millions
-    df.drop(columns=["first_name", "second_name"], inplace=True)
-    return df
+    return df.drop(columns=["first_name", "second_name"])
 
 
 def build_players_df(data: dict) -> tuple[pd.DataFrame, pd.Series]:
-    """Build players DataFrame with team names and positions mapped.
+    """Construct a cleaned players DataFrame with readable team and position fields.
 
-    Returns:
-        players_df: filtered DataFrame with supported metrics
-        team_map: mapping of team id -> team name
+    Parameters
+    ----------
+    data : dict
+        Dictionary returned by the FPL bootstrap-static endpoint, containing
+        'elements', 'teams', and 'element_types'.
+
+    Returns
+    -------
+    tuple[pd.DataFrame, pd.Series]
+        players_df : pd.DataFrame
+            The processed and filtered players DataFrame, containing only
+            supported metrics.
+        team_map : pd.Series
+            Mapping from team ID to team name.
 
     """
     players_df = preprocess_players_df(

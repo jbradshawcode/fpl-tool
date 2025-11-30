@@ -1,3 +1,12 @@
+"""Retrieve, process, and analyze Fantasy Premier League player history data.
+
+This module provides:
+- Concurrent download of individual player history records
+- Mapping and cleaning of FPL API history fields
+- Vectorised calculation of expected points and per-90 metrics
+- Aggregation helpers for summarising expected returns
+"""
+
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import numpy as np
@@ -5,10 +14,28 @@ import pandas as pd
 from tqdm import tqdm
 
 from fpl.api import fetch_data
-from fpl.config import SUPPORTED_HISTORY_METRICS
+from fpl.config import POS_MAP, SUPPORTED_HISTORY_METRICS
+from utils.loading import load_parameters
 
 
 def fetch_player_history(element_id: int, team_map: dict[int, str]) -> pd.DataFrame:
+    """Retrieve and format historical match data for a single player.
+
+    Parameters
+    ----------
+    element_id : int
+        Player ID used by the FPL API.
+    team_map : dict[int, str]
+        Mapping from team ID to readable team name.
+
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame containing the player's match-by-match history with
+        opponent names mapped in. If no data is returned, an empty
+        DataFrame is provided.
+
+    """
     data = fetch_data(f"element-summary/{element_id}/")
     if not data or "history" not in data:
         return pd.DataFrame()
@@ -18,8 +45,28 @@ def fetch_player_history(element_id: int, team_map: dict[int, str]) -> pd.DataFr
 
 
 def fetch_all_histories(
-    player_ids: list[int], team_map: dict[int, str], max_workers: int = 20,
+    player_ids: list[int],
+    team_map: dict[int, str],
+    max_workers: int = 20,
 ) -> pd.DataFrame:
+    """Fetch match histories for multiple players concurrently.
+
+    Parameters
+    ----------
+    player_ids : list[int]
+        List of player element IDs.
+    team_map : dict[int, str]
+        Mapping from team ID to readable team names.
+    max_workers : int, optional
+        Number of worker threads to use for parallel requests.
+
+    Returns
+    -------
+    pd.DataFrame
+        Combined and sorted match history for all players. Returns an empty
+        DataFrame if no histories could be retrieved.
+
+    """
     all_histories = []
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = {
@@ -27,13 +74,17 @@ def fetch_all_histories(
             for pid in player_ids
         }
         for future in tqdm(
-            as_completed(futures), total=len(futures), desc="Fetching player histories",
+            as_completed(futures),
+            total=len(futures),
+            desc="Fetching player histories",
         ):
             df = future.result()
             if not df.empty:
                 all_histories.append(df)
+
     if not all_histories:
         return pd.DataFrame()
+
     return (
         pd.concat(all_histories, ignore_index=True)
         .sort_values(by=["element", "round"])
@@ -42,42 +93,68 @@ def fetch_all_histories(
 
 
 def calculate_expected_points(
-    history_df: pd.DataFrame, players_df: pd.DataFrame, scoring: dict,
+    history_df: pd.DataFrame,
+    players_df: pd.DataFrame,
+    scoring: dict,
 ) -> pd.DataFrame:
-    """Add expected_points to a history DataFrame"""
+    """Compute expected points and per-90 metrics for each match entry.
+
+    Parameters
+    ----------
+    history_df : pd.DataFrame
+        Player match-history table containing minutes, goals, xG, xA,
+        defensive actions, and other event data.
+    players_df : pd.DataFrame
+        Player metadata including position and team.
+    scoring : dict
+        FPL scoring rules dict (goals, assists, cards, clean sheets, etc.).
+
+    Returns
+    -------
+    pd.DataFrame
+        Updated DataFrame with:
+        - expected_points
+        - expected_points_per_90
+        - actual_points_per_90
+        - percentage_of_mins_played
+        plus added position and shorthand position codes.
+
+    """
     if history_df.empty:
         return history_df
 
-    pos_map = {
-        "Goalkeeper": "GKP",
-        "Defender": "DEF",
-        "Midfielder": "MID",
-        "Forward": "FWD",
-    }
+    params = load_parameters()
+
     history_df["position"] = history_df["element"].map(players_df["position"])
-    history_df["pos_abbr"] = history_df["position"].map(pos_map)
+    history_df["pos_abbr"] = history_df["position"].map(POS_MAP)
 
     # Play points
-    long_short_points = (history_df["minutes"] >= 60) * scoring["long_play"] + (
-        (history_df["minutes"] > 0) & (history_df["minutes"] < 60)
+    long_short_points = (
+        history_df["minutes"] >= params["long_play_threshold"]
+    ) * scoring["long_play"] + (
+        (history_df["minutes"] > 0)
+        & (history_df["minutes"] < params["long_play_threshold"])
     ) * scoring["short_play"]
 
     # Defensive contribution bonus
     defensive_contribution_points = np.where(
         (history_df["pos_abbr"] == "DEF")
-        & (history_df["defensive_contribution"] >= 10),
+        & (history_df["defensive_contribution"] >= params["defcon_threshold"]["def"]),
         2,
         np.where(
             (history_df["pos_abbr"] != "DEF")
-            & (history_df["defensive_contribution"] >= 12),
+            & (
+                history_df["defensive_contribution"]
+                >= params["defcon_threshold"]["non_def"]
+            ),
             2,
             0,
         ),
     )
 
-    # Clean sheet probability
+    # Clean sheet probability (exponential model)
     probability_clean_sheet = np.where(
-        history_df["minutes"] >= 60,
+        history_df["minutes"] >= params["long_play_threshold"],
         np.exp(-history_df["expected_goals_conceded"].astype(float)),
         0,
     )
@@ -104,8 +181,7 @@ def calculate_expected_points(
         + long_short_points
     )
 
-    history_df[history_df["red_cards"] != 0]
-
+    # Expected & actual points per 90
     history_df["expected_points_per_90"] = np.where(
         history_df["minutes"] != 0,
         np.where(
@@ -132,7 +208,20 @@ def calculate_expected_points(
 
 
 def aggregate_expected_points(history_df: pd.DataFrame) -> pd.Series:
-    """Return a Series of expected points summed per player"""
+    """Sum expected points across all matches for each player.
+
+    Parameters
+    ----------
+    history_df : pd.DataFrame
+        Match-by-match expected-points dataset.
+
+    Returns
+    -------
+    pd.Series
+        Total expected points per player, indexed by element ID.
+        Returns an empty Series if no data is available.
+
+    """
     if history_df.empty:
         return pd.Series(dtype=float)
     return history_df.groupby("element")["expected_points"].sum()

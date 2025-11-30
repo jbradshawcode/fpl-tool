@@ -1,26 +1,69 @@
+"""Data initialization and storage utilities for Fantasy Premier League.
+
+This module provides functions to:
+- Retrieve FPL data from the API
+- Build structured DataFrames for players and histories
+- Extract and save scoring rules
+- Persist data locally as CSV and JSON
+"""
+
 import json
 import logging
+from pathlib import Path
 
 from fpl import api, history, preprocessing
 
+logger = logging.getLogger(__name__)
 
-def initialise_data(endpoint: str) -> None:
-    data = fetch_data(endpoint=endpoint)
+
+def initialise_data(endpoint: str) -> dict:
+    """Fetch FPL data from the API, build structured DataFrames, and save locally.
+
+    Parameters
+    ----------
+    endpoint : str
+        Relative API endpoint to fetch (e.g., "bootstrap-static/").
+
+    Returns
+    -------
+    dict
+        Dictionary containing:
+        - 'players_df': pd.DataFrame of processed player data
+        - 'history_df': pd.DataFrame of match histories
+        - 'scoring': dict of FPL scoring rules
+
+    """
+    data = retrieve_data(endpoint=endpoint)
     save_data(data=data)
-
     return data
 
 
-def fetch_data(endpoint: str) -> dict:
+def retrieve_data(endpoint: str) -> dict:
+    """Retrieve FPL data and build DataFrames without saving to disk.
+
+    Parameters
+    ----------
+    endpoint : str
+        Relative API endpoint to fetch (e.g., "bootstrap-static/").
+
+    Returns
+    -------
+    dict
+        Dictionary containing:
+        - 'players_df': pd.DataFrame of processed player data
+        - 'history_df': pd.DataFrame of match histories
+        - 'scoring': dict of FPL scoring rules
+
+    """
     # Fetch static data
-    logging.info("Fetching static data...")
+    logger.info("Fetching static data...")
     data = api.fetch_data(endpoint=endpoint)
 
     # Build data structures
-    logging.info("Building players dataframe...")
+    logger.info("Building players dataframe...")
     players_df, team_map = preprocessing.build_players_df(data)
 
-    logging.info("Fetching player histories...")
+    logger.info("Fetching player histories...")
     history_df = history.fetch_all_histories(players_df.index.tolist(), team_map)
 
     scoring = data["game_config"]["scoring"]
@@ -29,8 +72,29 @@ def fetch_data(endpoint: str) -> dict:
 
 
 def save_data(data: dict) -> None:
-    data["players_df"].to_csv("data/players_data.csv", index=False)
-    data["history_df"].to_csv("data/player_histories.csv", index=False)
+    """Save player, history, and scoring data to local files.
 
-    with open("data/scoring.json", "w") as f:
+    Args:
+        data: Dictionary containing 'players_df', 'history_df', and 'scoring' keys.
+    """
+    data_dir = Path("data")
+    data_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Save DataFrames to CSV
+    data["players_df"].to_csv(data_dir / "players_data.csv", index=False)
+    data["history_df"].to_csv(data_dir / "player_histories.csv", index=False)
+    
+    # Save scoring data to JSON
+    with (data_dir / "scoring.json").open("w") as f:
         json.dump(data["scoring"], f, indent=4)
+
+
+def load_parameters() -> dict:
+    """Load and return parameters from the parameters.json file.
+
+    Returns:
+        dict: Dictionary containing the loaded parameters.
+
+    """
+    with Path("data/parameters.json").open() as f:
+        return json.load(f)

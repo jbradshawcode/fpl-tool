@@ -1,0 +1,7 @@
+{
+    "long_play_threshold": 60,
+    "defcon_threshold": {
+        "non_def": 12,
+        "def": 10
+    }
+}

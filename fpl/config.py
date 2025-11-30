@@ -1,5 +1,21 @@
+"""Configuration constants for Fantasy Premier League data processing.
+
+This module defines:
+- The base API URL
+- Columns and metrics for player profiles
+- Metrics supported for ranking and historical analysis
+"""
+
 # Base URL for FPL API
 BASE_URL = "https://fantasy.premierleague.com/api/"
+
+# Positions Mapping
+POS_MAP = {
+    "Goalkeeper": "GKP",
+    "Defender": "DEF",
+    "Midfielder": "MID",
+    "Forward": "FWD",
+}
 
 # Columns for player profiles
 PROFILE_COLS = [
