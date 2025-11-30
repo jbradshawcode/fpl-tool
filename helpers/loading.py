@@ -55,9 +55,13 @@ def retrieve_data(endpoint: str) -> dict:
         - 'scoring': dict of FPL scoring rules
 
     """
-    # Fetch static data
-    logger.info("Fetching static data...")
-    data = api.fetch_data(endpoint=endpoint)
+    try:
+        # Fetch static data
+        logger.info("Fetching static data...")
+        data = api.fetch_data(endpoint=endpoint)
+    except Exception as e:
+        logger.error(f"Failed to fetch data from API: {e}")
+        raise
 
     # Build data structures
     logger.info("Building players dataframe...")
@@ -77,6 +81,11 @@ def save_data(data: dict) -> None:
     Args:
         data: Dictionary containing 'players_df', 'history_df', and 'scoring' keys.
     """
+    required_keys = ['players_df', 'history_df', 'scoring']
+    missing_keys = [key for key in required_keys if key not in data]
+    if missing_keys:
+        raise ValueError(f"Missing required keys in data dict: {missing_keys}")
+
     data_dir = Path("data")
     data_dir.mkdir(parents=True, exist_ok=True)
     
@@ -96,5 +105,12 @@ def load_parameters() -> dict:
         dict: Dictionary containing the loaded parameters.
 
     """
-    with Path("data/parameters.json").open() as f:
-        return json.load(f)
+    try:
+        with Path("data/parameters.json").open() as f:
+            return json.load(f)
+    except FileNotFoundError:
+        logger.error("Parameters file not found at data/parameters.json")
+        raise
+    except json.JSONDecodeError as e:
+        logger.error(f"Invalid JSON in parameters file: {e}")
+        raise

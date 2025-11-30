@@ -7,7 +7,7 @@ to record the date of the last update.
 from datetime import datetime, timezone
 from pathlib import Path
 
-STAMP_FILE = Path("data/last_update.txt")
+STAMP_FILE = Path(__file__).parent.parent / "data" / "last_update.txt"
 
 
 def should_update() -> bool:
@@ -22,8 +22,13 @@ def should_update() -> bool:
     """
     if not STAMP_FILE.exists():
         return True
-    last_date = STAMP_FILE.read_text().strip()
-    return last_date != str(datetime.now(tz=timezone.utc).date())
+
+    try:
+        last_date = STAMP_FILE.read_text().strip()
+        return last_date != str(datetime.now(tz=timezone.utc).date())
+    except (OSError, IOError):
+        # If we can't read the file, assume we should update
+        return True
 
 
 def mark_updated() -> None:
@@ -34,4 +39,9 @@ def mark_updated() -> None:
     None
 
     """
-    STAMP_FILE.write_text(str(datetime.now(tz=timezone.utc).date()))
+    try:
+        STAMP_FILE.parent.mkdir(parents=True, exist_ok=True)
+        STAMP_FILE.write_text(str(datetime.now(tz=timezone.utc).date()) + "\n")
+    except (OSError, IOError) as e:
+        # Log or re-raise depending on application needs
+        raise RuntimeError(f"Failed to update stamp file: {e}") from e

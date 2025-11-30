@@ -11,6 +11,7 @@ import json
 import logging
 from copy import deepcopy
 from pathlib import Path
+from typing import Optional
 
 import pandas as pd
 from tabulate import tabulate
@@ -74,9 +75,9 @@ def main() -> None:
 def expected_points_per_90(
     history_df: pd.DataFrame,
     players_df: pd.DataFrame,
-    position: str or None = None,
+    position: Optional[str] = None,
     mins_threshold: float = 60,
-    time_period: int or None = None,
+    time_period: Optional[int] = None,
 ) -> pd.DataFrame:
     """Compute expected and actual points per 90 minutes for players.
 

@@ -12,7 +12,7 @@ import requests
 from .config import BASE_URL
 
 
-def fetch_data(endpoint: str) -> dict or None:
+def fetch_data(endpoint: str) -> dict:
     """Retrieve JSON data from the Fantasy Premier League API.
 
     Parameters
@@ -22,9 +22,9 @@ def fetch_data(endpoint: str) -> dict or None:
 
     Returns
     -------
-    dict or None
-        Parsed JSON response as a dictionary. Returns None only if the
-        request unexpectedly yields no JSON payload.
+    dict
+        Parsed JSON response as a dictionary.
+
 
     Raises
     ------
@@ -32,9 +32,16 @@ def fetch_data(endpoint: str) -> dict or None:
         If the request returns an unsuccessful HTTP status code.
     requests.RequestException
         For network-related issues such as timeouts or connection errors.
+    requests.exceptions.JSONDecodeError
+        If the response body is not valid JSON.
+    TypeError
+        If the response JSON is not a dictionary.
 
     """
     url = f"{BASE_URL}{endpoint}"
     response = requests.get(url, timeout=10)
     response.raise_for_status()
-    return response.json()
+    data = response.json()
+    if not isinstance(data, dict):
+        raise TypeError(f"Expected dict but got {type(data).__name__}")
+    return data
