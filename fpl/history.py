@@ -14,8 +14,8 @@ import pandas as pd
 from tqdm import tqdm
 
 from fpl.api import fetch_data
-from fpl.config import POS_MAP, SUPPORTED_HISTORY_METRICS
-from utils.loading import load_parameters
+from helpers.config import POS_MAP, SUPPORTED_HISTORY_METRICS
+from helpers.loading import load_parameters
 
 
 def fetch_player_history(element_id: int, team_map: dict[int, str]) -> pd.DataFrame:
@@ -205,23 +205,3 @@ def calculate_expected_points(
     history_df["percentage_of_mins_played"] = history_df["minutes"] / 90
 
     return history_df
-
-
-def aggregate_expected_points(history_df: pd.DataFrame) -> pd.Series:
-    """Sum expected points across all matches for each player.
-
-    Parameters
-    ----------
-    history_df : pd.DataFrame
-        Match-by-match expected-points dataset.
-
-    Returns
-    -------
-    pd.Series
-        Total expected points per player, indexed by element ID.
-        Returns an empty Series if no data is available.
-
-    """
-    if history_df.empty:
-        return pd.Series(dtype=float)
-    return history_df.groupby("element")["expected_points"].sum()

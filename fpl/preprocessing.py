@@ -8,7 +8,7 @@ This module provides:
 
 import pandas as pd
 
-from fpl.config import SUPPORTED_METRICS
+from helpers.config import SUPPORTED_METRICS
 
 
 def build_players_df(data: dict) -> tuple[pd.DataFrame, pd.Series]:

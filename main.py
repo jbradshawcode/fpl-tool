@@ -16,8 +16,9 @@ import pandas as pd
 from tabulate import tabulate
 
 from fpl import history
-from utils.loading import initialise_data
-from utils.update_guard import mark_updated, should_update
+from helpers.config import BOOTSTRAP_STATIC_ENDPOINT, DISPLAY_COLS, DISPLAY_MAPPING
+from helpers.loading import initialise_data
+from helpers.update_guard import mark_updated, should_update
 
 logging.basicConfig(
     level=logging.INFO,
@@ -25,8 +26,6 @@ logging.basicConfig(
 )
 
 logger = logging.getLogger(__name__)
-
-ENDPOINT = "bootstrap-static/"
 
 
 def main() -> None:
@@ -38,7 +37,7 @@ def main() -> None:
     """
     # Fetch/update histories
     if should_update():
-        data = initialise_data(endpoint=ENDPOINT)
+        data = initialise_data(endpoint=BOOTSTRAP_STATIC_ENDPOINT)
         players_df, history_df, scoring = (
             data["players_df"],
             data["history_df"],
@@ -161,24 +160,7 @@ def display_df(df: pd.DataFrame) -> None:
         "{:.2f}%".format,
     )
 
-    output_cols = [
-        "web_name",
-        "expected_points_per_90",
-        "actual_points_per_90",
-        "percentage_of_mins_played",
-        "now_cost",
-        "team_name",
-    ]
-    output_df = df[output_cols].rename(
-        columns={
-            "web_name": "Player",
-            "expected_points_per_90": "xPoints\n/90",
-            "actual_points_per_90": "Points\n/90",
-            "percentage_of_mins_played": "% of Mins\nPlayed",
-            "now_cost": "Cost",
-            "team_name": "Team",
-        },
-    )
+    output_df = df[DISPLAY_COLS].rename(columns=DISPLAY_MAPPING)
     logger.info("\n%s", tabulate(output_df, headers="keys", tablefmt="psql"))
 
 
