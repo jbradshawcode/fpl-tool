@@ -1,0 +1,87 @@
+{
+    "long_play": 2,
+    "short_play": 1,
+    "goals_conceded": {
+        "DEF": -1,
+        "FWD": 0,
+        "GKP": -1,
+        "MID": 0
+    },
+    "saves": 1,
+    "goals_scored": {
+        "DEF": 6,
+        "FWD": 4,
+        "GKP": 10,
+        "MID": 5
+    },
+    "assists": 3,
+    "clean_sheets": {
+        "DEF": 4,
+        "FWD": 0,
+        "GKP": 4,
+        "MID": 1
+    },
+    "penalties_saved": 5,
+    "penalties_missed": -2,
+    "yellow_cards": -1,
+    "red_cards": -3,
+    "own_goals": -2,
+    "bonus": 1,
+    "bps": 0,
+    "influence": 0,
+    "creativity": 0,
+    "threat": 0,
+    "ict_index": 0,
+    "special_multiplier": 1,
+    "tackles": 0,
+    "clearances_blocks_interceptions": 0,
+    "recoveries": 0,
+    "defensive_contribution": {
+        "DEF": 2,
+        "FWD": 2,
+        "GKP": 0,
+        "MID": 2
+    },
+    "mng_goals_scored": {
+        "DEF": 0,
+        "FWD": 0,
+        "GKP": 0,
+        "MID": 0
+    },
+    "mng_clean_sheets": {
+        "DEF": 0,
+        "FWD": 0,
+        "GKP": 0,
+        "MID": 0
+    },
+    "mng_win": {
+        "DEF": 0,
+        "FWD": 0,
+        "GKP": 0,
+        "MID": 0
+    },
+    "mng_draw": {
+        "DEF": 0,
+        "FWD": 0,
+        "GKP": 0,
+        "MID": 0
+    },
+    "mng_loss": 0,
+    "mng_underdog_win": {
+        "DEF": 0,
+        "FWD": 0,
+        "GKP": 0,
+        "MID": 0
+    },
+    "mng_underdog_draw": {
+        "DEF": 0,
+        "FWD": 0,
+        "GKP": 0,
+        "MID": 0
+    },
+    "starts": 0,
+    "expected_assists": 0,
+    "expected_goal_involvements": 0,
+    "expected_goals_conceded": 0,
+    "expected_goals": 0
+}

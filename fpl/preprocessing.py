@@ -1,4 +1,5 @@
 import pandas as pd
+
 from fpl.config import SUPPORTED_METRICS
 
 
@@ -12,14 +13,16 @@ def preprocess_players_df(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def build_players_df(data: dict) -> tuple[pd.DataFrame, pd.Series]:
-    """
-    Build players DataFrame with team names and positions mapped.
+    """Build players DataFrame with team names and positions mapped.
 
     Returns:
         players_df: filtered DataFrame with supported metrics
         team_map: mapping of team id -> team name
+
     """
-    players_df = preprocess_players_df(pd.DataFrame(data["elements"]).set_index("id").sort_index())
+    players_df = preprocess_players_df(
+        pd.DataFrame(data["elements"]).set_index("id").sort_index(),
+    )
 
     teams_df = pd.DataFrame(data["teams"])
     positions_df = pd.DataFrame(data["element_types"])

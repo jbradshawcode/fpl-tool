@@ -1,28 +1,45 @@
+import json
 import logging
-import pandas as pd
 from copy import deepcopy
-from tabulate import tabulate
-from fpl import api, preprocessing, history, ranking
-from utils.update_guard import should_update, mark_updated
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+import pandas as pd
+from tabulate import tabulate
+
+from fpl import history
+from utils.loading import initialise_data
+from utils.update_guard import mark_updated, should_update
+
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s",
+)
+
+
+ENDPOINT = "bootstrap-static/"
 
 
 def main():
-    data = api.fetch_data("bootstrap-static/")
-    players_df, team_map = preprocessing.build_players_df(data)
-
     # Fetch/update histories
     if should_update():
-        history_df = history.fetch_all_histories(players_df.index.tolist(), team_map)
-        if not history_df.empty:
-            history_df.to_csv("player_histories.csv", index=False)
-            mark_updated()
+        data = initialise_data(endpoint=ENDPOINT)
+        players_df, history_df, scoring = (
+            data["players_df"],
+            data["history_df"],
+            data["scoring"],
+        )
+
+        mark_updated()
     else:
-        history_df = pd.read_csv("player_histories.csv") if pd.io.common.file_exists("player_histories.csv") else pd.DataFrame()
+        logging.info("Loading data from local files...")
+        players_df = pd.read_csv("data/players_data.csv")
+        history_df = pd.read_csv("data/player_histories.csv")
+
+        with open("data/scoring.json") as f:
+            scoring = json.load(f)
 
     # Calculate expected points
-    history_df = history.calculate_expected_points(history_df, players_df, scoring=data["game_config"]["scoring"])
+    history_df = history.calculate_expected_points(
+        history_df, players_df, scoring=scoring,
+    )
 
     # Assess players
     df = expected_points_per_90(
@@ -36,14 +53,13 @@ def main():
 
 
 def expected_points_per_90(
-        history_df: pd.DataFrame,
-        players_df: pd.DataFrame,
-        position: str = None,
-        mins_threshold: float = 60,
-        time_period: int = None,
-    ):
-    """
-    Filter players by average minutes played over last `time_period` rounds,
+    history_df: pd.DataFrame,
+    players_df: pd.DataFrame,
+    position: str = None,
+    mins_threshold: float = 60,
+    time_period: int = None,
+):
+    """Filter players by average minutes played over last `time_period` rounds,
     optionally by position, and sort by expected points.
     """
     # Make a copy of history_df to avoid modifying original
@@ -51,13 +67,13 @@ def expected_points_per_90(
 
     # Filter by recent rounds if time_period is specified
     if time_period is not None:
-        latest_round = history_df['round'].max()
+        latest_round = history_df["round"].max()
         recent_rounds = list(range(latest_round - time_period + 1, latest_round + 1))
-        df = df[df['round'].isin(recent_rounds)]
-    
+        df = df[df["round"].isin(recent_rounds)]
+
     # Filter by position if specified
     if position is not None:
-        df = df[df['pos_abbr'] == position]
+        df = df[df["pos_abbr"] == position]
 
     # Group by player
     grouped = df.groupby("element").agg(
@@ -86,22 +102,32 @@ def expected_points_per_90(
 def display_df(df: pd.DataFrame):
     df["expected_points_per_90"] = df["expected_points_per_90"].round(2)
     df["actual_points_per_90"] = df["actual_points_per_90"].round(2)
-    df["percentage_of_mins_played"] = (df["percentage_of_mins_played"] * 100).map("{:.2f}%".format)
+    df["percentage_of_mins_played"] = (df["percentage_of_mins_played"] * 100).map(
+        "{:.2f}%".format,
+    )
 
-    output_cols = ["full_name", "expected_points_per_90", "actual_points_per_90", "percentage_of_mins_played", "now_cost", "team_name", "position"]
-    output_df = df[output_cols].rename(columns={
-        "full_name": "Player",
-        "expected_points_per_90": "xPoints/90",
-        "actual_points_per_90": "Points/90",
-        "percentage_of_mins_played": "% of Mins Played",
-        "now_cost": "Cost",
-        "team_name": "Team",
-        "position": "Position"
-    })
-    print(tabulate(output_df, headers='keys', tablefmt='psql'))
+    output_cols = [
+        "full_name",
+        "expected_points_per_90",
+        "actual_points_per_90",
+        "percentage_of_mins_played",
+        "now_cost",
+        "team_name",
+        "position",
+    ]
+    output_df = df[output_cols].rename(
+        columns={
+            "full_name": "Player",
+            "expected_points_per_90": "xPoints/90",
+            "actual_points_per_90": "Points/90",
+            "percentage_of_mins_played": "% of Mins Played",
+            "now_cost": "Cost",
+            "team_name": "Team",
+            "position": "Position",
+        },
+    )
+    print(tabulate(output_df, headers="keys", tablefmt="psql"))
 
-
-### END DEV WORK ###
 
 if __name__ == "__main__":
     main()
