@@ -65,8 +65,8 @@ def main() -> None:
     df = expected_points_per_90(
         history_df=history_df,
         players_df=players_df,
-        position="MID",
-        mins_threshold=60,
+        position="DEF",
+        mins_threshold=0.7,
         time_period=5,
     ).head(10)
     display_df(df)
@@ -76,7 +76,7 @@ def expected_points_per_90(
     history_df: pd.DataFrame,
     players_df: pd.DataFrame,
     position: Optional[str] = None,
-    mins_threshold: float = 60,
+    mins_threshold: float = 0.70,
     time_period: Optional[int] = None,
 ) -> pd.DataFrame:
     """Compute expected and actual points per 90 minutes for players.
@@ -117,22 +117,31 @@ def expected_points_per_90(
     if position is not None:
         df = df[df["pos_abbr"] == position]
 
-    # Group by player
+    # Group by player and sum the raw values first
     grouped = df.groupby("element").agg(
-        avg_minutes=("minutes", "mean"),
-        expected_points_per_90=("expected_points_per_90", "mean"),
-        actual_points_per_90=("actual_points_per_90", "mean"),
-        percentage_of_mins_played=("percentage_of_mins_played", "mean"),
+        total_minutes=("minutes", "sum"),
+        total_expected_points=("expected_points", "sum"),
+        total_actual_points=("total_points", "sum"),
     )
 
-    # Apply minutes filter
-    grouped = grouped[grouped["avg_minutes"] >= mins_threshold]
+    # Calculate per-90 metrics from the summed values
+    grouped["expected_points_per_90"] = (grouped["total_expected_points"] / grouped["total_minutes"]) * 90
+    grouped["actual_points_per_90"] = (grouped["total_actual_points"] / grouped["total_minutes"]) * 90
+    grouped["percentage_of_mins_played"] = (grouped["total_minutes"] / (len(df["round"].unique()) * 90))
+    grouped["actual_points"] = grouped["actual_points_per_90"] * grouped["percentage_of_mins_played"]
+    grouped["expected_points"] = grouped["expected_points_per_90"] * grouped["percentage_of_mins_played"]
+
+    # Apply minutes filter (e.g., at least 60% minutes played)
+    grouped = grouped[grouped["percentage_of_mins_played"] >= mins_threshold]
+
+    # Clean up - drop the intermediate columns if not needed
+    grouped = grouped.drop(columns=["total_expected_points", "total_actual_points", "total_minutes"])
 
     # Merge with players_df for names, teams, etc.
     merged = grouped.merge(players_df, left_index=True, right_index=True, how="left")
 
     # Sort by expected points per 90
-    merged = merged.sort_values("expected_points_per_90", ascending=False)
+    merged = merged.sort_values("expected_points", ascending=False)
 
     # Reset index
     merged = merged.reset_index(drop=False)
@@ -154,6 +163,8 @@ def display_df(df: pd.DataFrame) -> None:
         percentage, and player metadata.
 
     """
+    df["actual_points"] = (df["actual_points"]).round(2)
+    df["expected_points"] = (df["expected_points"]).round(2)
     df["actual_points_per_90"] = df["actual_points_per_90"].round(2)
     df["expected_points_per_90"] = df["expected_points_per_90"].round(2)
     df["now_cost"] = df["now_cost"] / 10  # convert to millions

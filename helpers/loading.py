@@ -11,7 +11,8 @@ import json
 import logging
 from pathlib import Path
 
-from fpl import api, history, preprocessing
+from helpers.api import fetch_data
+from fpl import history, preprocessing
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +59,7 @@ def retrieve_data(endpoint: str) -> dict:
     try:
         # Fetch static data
         logger.info("Fetching static data...")
-        data = api.fetch_data(endpoint=endpoint)
+        data = fetch_data(endpoint=endpoint)
     except Exception as e:
         logger.error(f"Failed to fetch data from API: {e}")
         raise
