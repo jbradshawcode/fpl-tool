@@ -2,7 +2,9 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=2.0, user-scalable=yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>FPL Expected Points Analysis</title>
     <style>
         * {
@@ -50,7 +52,7 @@
             display: flex;
             align-items: center;
             gap: 0.75rem;
-            flex: 1;
+            flex: 1 1 0;
             min-width: 250px;
         }
 
@@ -156,6 +158,11 @@
             padding: 1.5rem;
             margin-bottom: 2rem;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
         }
 
         .section-header {
@@ -291,56 +298,251 @@
 
         @media (max-width: 768px) {
             body {
-                padding: 1rem;
+                padding: 0.5rem;
             }
 
             h1 {
-                font-size: 1.75rem;
+                font-size: 1.5rem;
+                margin-bottom: 1rem;
+            }
+
+            .position-selector {
+                padding: 1rem;
             }
 
             .selector-row-horizontal {
-                flex-direction: column;
-                align-items: stretch;
                 gap: 1rem;
             }
 
             .selector-item {
-                flex-direction: column;
-                align-items: stretch;
-                min-width: 100%;
+                flex: 1 1 0;
+                min-width: 0;
+                gap: 0.5rem;
             }
 
             .position-selector label {
-                text-align: left;
-            }
-
-            #position-dropdown,
-            .slider-container {
-                width: 100%;
-            }
-
-            table {
                 font-size: 0.8rem;
+                white-space: nowrap;
             }
 
-            th, td {
-                padding: 0.5rem 0.25rem;
+            #position-dropdown {
+                padding: 0.5rem 0.75rem;
+                font-size: 0.85rem;
+                min-width: 0;
+                flex: 1;
+            }
+
+            .slider-container {
+                min-width: 0;
+                flex: 1;
+                gap: 0.5rem;
+            }
+
+            #mins-slider,
+            #games-slider {
+                height: 10px;
+                flex: 1;
+            }
+
+            #mins-slider::-webkit-slider-thumb,
+            #games-slider::-webkit-slider-thumb {
+                width: 28px;
+                height: 28px;
+            }
+
+            #mins-slider::-moz-range-thumb,
+            #games-slider::-moz-range-thumb {
+                width: 28px;
+                height: 28px;
+            }
+
+            .slider-value {
+                font-size: 0.85rem;
+                min-width: 70px;
+            }
+
+            .position-section {
+                padding: 1rem;
             }
 
             .section-header {
-                flex-direction: column;
-                align-items: flex-start;
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
                 gap: 0.5rem;
+            }
+
+            .position-title {
+                font-size: 1.2rem;
+            }
+
+            .player-count {
+                font-size: 0.75rem;
+            }
+
+            table {
+                font-size: 0.75rem;
+            }
+
+            th, td {
+                padding: 0.4rem 0.2rem;
+            }
+
+            th.sortable {
+                padding: 0.4rem 0.15rem;
+            }
+
+            .sort-arrow {
+                font-size: 0.7rem;
             }
 
             .pagination {
-                flex-wrap: wrap;
+                flex-wrap: nowrap;
                 gap: 0.5rem;
+                padding: 0.75rem;
             }
 
             .page-btn {
-                padding: 0.5rem 1rem;
-                font-size: 0.9rem;
+                padding: 0.5rem 0.75rem;
+                font-size: 0.85rem;
+            }
+
+            .page-info {
+                font-size: 0.85rem;
+            }
+        }
+
+        /* Landscape mobile/tablet optimization - keeps controls on one line */
+        @media (max-width: 926px) and (orientation: landscape) {
+            body {
+                padding: 0.5rem;
+            }
+
+            h1 {
+                font-size: 1.25rem;
+                margin-bottom: 0.5rem;
+            }
+
+            .position-selector {
+                padding: 0.5rem 0.75rem;
+            }
+
+            .selector-row-horizontal {
+                gap: 0.5rem;
+                flex-wrap: nowrap;
+            }
+
+            .selector-item {
+                min-width: 0;
+                flex: 1 1 0;
+                gap: 0.35rem;
+            }
+
+            .position-selector label {
+                font-size: 0.7rem;
+                white-space: nowrap;
+            }
+
+            #position-dropdown {
+                font-size: 0.75rem;
+                padding: 0.35rem 0.5rem;
+                min-width: 90px;
+                flex: 1;
+            }
+
+            .slider-container {
+                min-width: 0;
+                flex: 1;
+                gap: 0.35rem;
+            }
+
+            #mins-slider,
+            #games-slider {
+                height: 8px;
+                min-width: 60px;
+            }
+
+            #mins-slider::-webkit-slider-thumb,
+            #games-slider::-webkit-slider-thumb {
+                width: 24px;
+                height: 24px;
+            }
+
+            #mins-slider::-moz-range-thumb,
+            #games-slider::-moz-range-thumb {
+                width: 24px;
+                height: 24px;
+            }
+
+            .slider-value {
+                font-size: 0.75rem;
+                min-width: 60px;
+            }
+
+            .position-section {
+                padding: 0.75rem;
+            }
+
+            .section-header {
+                margin-bottom: 0.5rem;
+            }
+
+            .position-title {
+                font-size: 1rem;
+            }
+
+            .player-count {
+                font-size: 0.7rem;
+            }
+
+            table {
+                font-size: 0.7rem;
+            }
+
+            th, td {
+                padding: 0.35rem 0.15rem;
+            }
+
+            .pagination {
+                padding: 0.5rem;
+                margin: 0.75rem 0;
+            }
+
+            .page-btn {
+                padding: 0.4rem 0.75rem;
+                font-size: 0.8rem;
+            }
+
+            .page-info {
+                font-size: 0.8rem;
+            }
+        }
+
+        /* Extra small devices (phones in portrait, less than 576px) */
+        @media (max-width: 576px) {
+            .selector-row-horizontal {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 0.75rem;
+            }
+
+            .selector-item {
+                flex-direction: row;
+                align-items: center;
+                min-width: 100%;
+                justify-content: space-between;
+            }
+
+            .position-selector label {
+                flex-shrink: 0;
+            }
+
+            #position-dropdown {
+                flex: 1;
+            }
+
+            .slider-container {
+                flex: 1;
             }
         }
     </style>
@@ -403,6 +605,7 @@
                 <h2 class="position-title">{{ position_data.name }}</h2>
                 <p class="player-count">Showing {{ position_data.start_rank }}-{{ position_data.end_rank }} of {{ position_data.total_players }} players</p>
             </div>
+            <div class="table-wrapper">
             <table>
                 <thead>
                     <tr>
@@ -473,6 +676,7 @@
                     {% endfor %}
                 </tbody>
             </table>
+            </div>
         </div>
         
         <!-- Pagination Controls -->
