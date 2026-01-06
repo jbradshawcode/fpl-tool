@@ -1,82 +1,23 @@
-"""Load Fantasy Premier League data, compute expected points, and rank players.
+import pandas as pd
 
-This module:
-- Fetches or loads cached player history and metadata
-- Computes expected points using the `history` helper
-- Filters players based on minutes played, position, and recent rounds
-- Outputs the top performers in a formatted table
-"""
-
-import json
-import logging
 from copy import deepcopy
-from pathlib import Path
 from typing import Optional
 
-import pandas as pd
 from tabulate import tabulate
 
-from fpl import history
-from helpers.config import BOOTSTRAP_STATIC_ENDPOINT, DISPLAY_COLS, DISPLAY_MAPPING
-from helpers.loading import initialise_data
-from helpers.update_guard import mark_updated, should_update
-
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s",
-)
-
-logger = logging.getLogger(__name__)
+from helpers.config import DISPLAY_COLS, DISPLAY_MAPPING
+from helpers.logger import get_logger
 
 
-def main() -> None:
-    """Execute the main program flow.
-
-    Loads or fetches player data depending on cache state, computes expected
-    points per 90 minutes for a specified position and time window, and prints
-    a ranked table of the top performers.
-    """
-    # Fetch/update histories
-    if should_update():
-        data = initialise_data(endpoint=BOOTSTRAP_STATIC_ENDPOINT)
-        players_df, history_df, scoring = (
-            data["players_df"],
-            data["history_df"],
-            data["scoring"],
-        )
-
-        mark_updated()
-    else:
-        logger.info("Loading data from local files...")
-        players_df = pd.read_csv("data/players_data.csv", index_col='id')
-        history_df = pd.read_csv("data/player_histories.csv")
-
-        with Path("data/scoring.json").open() as f:
-            scoring = json.load(f)
-
-    # Calculate expected points
-    history_df = history.calculate_expected_points(
-        history_df=history_df,
-        players_df=players_df,
-        scoring=scoring,
-    )
-
-    # Assess players
-    df = expected_points_per_90(
-        history_df=history_df,
-        players_df=players_df,
-        position="DEF",
-        mins_threshold=0.7,
-        time_period=5,
-    ).head(10)
-    display_df(df)
+# Get logger for this module
+logger = get_logger(__name__)
 
 
 def expected_points_per_90(
     history_df: pd.DataFrame,
     players_df: pd.DataFrame,
     position: Optional[str] = None,
-    mins_threshold: float = 0.70,
+    mins_threshold: float = None,
     time_period: Optional[int] = None,
 ) -> pd.DataFrame:
     """Compute expected and actual points per 90 minutes for players.
@@ -132,7 +73,8 @@ def expected_points_per_90(
     grouped["expected_points"] = grouped["expected_points_per_90"] * grouped["percentage_of_mins_played"]
 
     # Apply minutes filter (e.g., at least 60% minutes played)
-    grouped = grouped[grouped["percentage_of_mins_played"] >= mins_threshold]
+    if mins_threshold is not None:
+        grouped = grouped[grouped["percentage_of_mins_played"] >= mins_threshold]
 
     # Clean up - drop the intermediate columns if not needed
     grouped = grouped.drop(columns=["total_expected_points", "total_actual_points", "total_minutes"])
@@ -174,7 +116,3 @@ def display_df(df: pd.DataFrame) -> None:
 
     output_df = df[DISPLAY_COLS].rename(columns=DISPLAY_MAPPING)
     logger.info("\n%s", tabulate(output_df, headers="keys", tablefmt="psql"))
-
-
-if __name__ == "__main__":
-    main()

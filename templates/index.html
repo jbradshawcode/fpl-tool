@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FPL Expected Points Analysis</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 2rem;
+            font-size: 2.5rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .position-selector {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .selector-row {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .position-selector label {
+            font-weight: 600;
+            color: #495057;
+            font-size: 1.1rem;
+            min-width: 200px;
+        }
+
+        #position-dropdown {
+            flex: 1;
+            max-width: 300px;
+            padding: 0.75rem 1rem;
+            font-size: 1rem;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            background: white;
+            color: #495057;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        #position-dropdown:hover {
+            border-color: #667eea;
+        }
+
+        #position-dropdown:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .slider-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            max-width: 400px;
+        }
+
+        #mins-slider {
+            flex: 1;
+            height: 8px;
+            border-radius: 5px;
+            background: linear-gradient(to right, #dee2e6 0%, #667eea 100%);
+            outline: none;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        #mins-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            transition: all 0.2s;
+        }
+
+        #mins-slider::-webkit-slider-thumb:hover {
+            background: #5568d3;
+            transform: scale(1.1);
+            box-shadow: 0 3px 6px rgba(0,0,0,0.3);
+        }
+
+        #mins-slider::-moz-range-thumb {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            transition: all 0.2s;
+        }
+
+        #mins-slider::-moz-range-thumb:hover {
+            background: #5568d3;
+            transform: scale(1.1);
+            box-shadow: 0 3px 6px rgba(0,0,0,0.3);
+        }
+
+        .slider-value {
+            font-weight: 700;
+            color: #667eea;
+            font-size: 1.2rem;
+            min-width: 50px;
+            text-align: right;
+        }
+
+        .position-section {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .position-title {
+            color: #667eea;
+            font-size: 1.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 3px solid #667eea;
+            margin: 0;
+        }
+
+        .player-count {
+            color: #6c757d;
+            font-size: 0.9rem;
+            margin: 0;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1rem;
+            margin: 2rem 0;
+            padding: 1rem;
+        }
+
+        .page-btn {
+            background: white;
+            color: #667eea;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: all 0.2s;
+        }
+
+        .page-btn:hover:not(.disabled) {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+
+        .page-btn.disabled {
+            background: #e9ecef;
+            color: #adb5bd;
+            cursor: not-allowed;
+        }
+
+        .page-info {
+            color: white;
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        thead {
+            background: #f8f9fa;
+        }
+
+        th {
+            padding: 0.75rem;
+            text-align: left;
+            font-weight: 600;
+            color: #495057;
+            border-bottom: 2px solid #dee2e6;
+        }
+
+        th.sortable {
+            cursor: pointer;
+            user-select: none;
+            transition: background-color 0.2s;
+        }
+
+        th.sortable:hover {
+            background-color: #e9ecef;
+        }
+
+        .sort-arrow {
+            margin-left: 0.25rem;
+            color: #667eea;
+            font-size: 0.8rem;
+        }
+
+        th.numeric {
+            text-align: right;
+        }
+
+        td {
+            padding: 0.75rem;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        td.numeric {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+
+        tr:hover {
+            background-color: #f8f9fa;
+        }
+
+        .player-name {
+            font-weight: 500;
+            color: #212529;
+        }
+
+        .team-name {
+            color: #6c757d;
+            font-size: 0.85rem;
+        }
+
+        .highlight {
+            background-color: #d4edda;
+        }
+
+        .rank {
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 1rem;
+            }
+
+            h1 {
+                font-size: 1.75rem;
+            }
+
+            .selector-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .position-selector label {
+                min-width: auto;
+            }
+
+            #position-dropdown,
+            .slider-container {
+                max-width: 100%;
+            }
+
+            table {
+                font-size: 0.8rem;
+            }
+
+            th, td {
+                padding: 0.5rem 0.25rem;
+            }
+
+            .section-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+            }
+
+            .pagination {
+                flex-wrap: wrap;
+                gap: 0.5rem;
+            }
+
+            .page-btn {
+                padding: 0.5rem 1rem;
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⚽ FPL Expected Points Analysis</h1>
+        
+        <!-- Position Selector -->
+        <div class="position-selector">
+            <div class="selector-row">
+                <label for="position-dropdown">Select Position:</label>
+                <select id="position-dropdown" onchange="changePosition(this.value)">
+                    {% for pos_code, pos_name in all_positions.items() %}
+                    <option value="{{ pos_code }}" {% if pos_code == selected_position %}selected{% endif %}>
+                        {{ pos_name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="selector-row">
+                <label for="mins-slider">Minimum Minutes Played:</label>
+                <div class="slider-container">
+                    <input 
+                        type="range" 
+                        id="mins-slider" 
+                        min="0" 
+                        max="100" 
+                        step="1" 
+                        value="{{ mins_threshold }}"
+                        oninput="updateMinsValue(this.value)"
+                    >
+                    <span class="slider-value" id="mins-value">{{ mins_threshold }}%</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Position Section -->
+        <div class="position-section">
+            <div class="section-header">
+                <h2 class="position-title">{{ position_data.name }}</h2>
+                <p class="player-count">Showing {{ position_data.start_rank }}-{{ position_data.end_rank }} of {{ position_data.total_players }} players</p>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th class="sortable" onclick="sortTable('web_name')">
+                            Player
+                            {% if sort_by == 'web_name' %}
+                                <span class="sort-arrow">{{ '▼' if sort_order == 'desc' else '▲' }}</span>
+                            {% endif %}
+                        </th>
+                        <th class="sortable" onclick="sortTable('team_name')">
+                            Team
+                            {% if sort_by == 'team_name' %}
+                                <span class="sort-arrow">{{ '▼' if sort_order == 'desc' else '▲' }}</span>
+                            {% endif %}
+                        </th>
+                        <th class="numeric sortable" onclick="sortTable('now_cost')">
+                            Cost
+                            {% if sort_by == 'now_cost' %}
+                                <span class="sort-arrow">{{ '▼' if sort_order == 'desc' else '▲' }}</span>
+                            {% endif %}
+                        </th>
+                        <th class="numeric sortable" onclick="sortTable('percentage_of_mins_played')">
+                            Mins %
+                            {% if sort_by == 'percentage_of_mins_played' %}
+                                <span class="sort-arrow">{{ '▼' if sort_order == 'desc' else '▲' }}</span>
+                            {% endif %}
+                        </th>
+                        <th class="numeric sortable" onclick="sortTable('expected_points')">
+                            xP
+                            {% if sort_by == 'expected_points' %}
+                                <span class="sort-arrow">{{ '▼' if sort_order == 'desc' else '▲' }}</span>
+                            {% endif %}
+                        </th>
+                        <th class="numeric sortable" onclick="sortTable('actual_points')">
+                            AP
+                            {% if sort_by == 'actual_points' %}
+                                <span class="sort-arrow">{{ '▼' if sort_order == 'desc' else '▲' }}</span>
+                            {% endif %}
+                        </th>
+                        <th class="numeric sortable" onclick="sortTable('expected_points_per_90')">
+                            xP/90
+                            {% if sort_by == 'expected_points_per_90' %}
+                                <span class="sort-arrow">{{ '▼' if sort_order == 'desc' else '▲' }}</span>
+                            {% endif %}
+                        </th>
+                        <th class="numeric sortable" onclick="sortTable('actual_points_per_90')">
+                            AP/90
+                            {% if sort_by == 'actual_points_per_90' %}
+                                <span class="sort-arrow">{{ '▼' if sort_order == 'desc' else '▲' }}</span>
+                            {% endif %}
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for player in position_data.players %}
+                    <tr>
+                        <td class="rank">{{ player.rank|int }}</td>
+                        <td class="player-name">{{ player.web_name }}</td>
+                        <td class="team-name">{{ player.team_name }}</td>
+                        <td class="numeric">£{{ "%.1f"|format(player.now_cost) }}</td>
+                        <td class="numeric">{{ "%.2f"|format(player.percentage_of_mins_played) }}%</td>
+                        <td class="numeric">{{ "%.2f"|format(player.expected_points) }}</td>
+                        <td class="numeric">{{ "%.2f"|format(player.actual_points) }}</td>
+                        <td class="numeric">{{ "%.2f"|format(player.expected_points_per_90) }}</td>
+                        <td class="numeric">{{ "%.2f"|format(player.actual_points_per_90) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination Controls -->
+        <div class="pagination">
+            {% if page > 1 %}
+            <a href="/?position={{ selected_position }}&mins={{ mins_threshold }}&sort={{ sort_by }}&order={{ sort_order }}&page={{ page - 1 }}" class="page-btn">← Previous</a>
+            {% else %}
+            <span class="page-btn disabled">← Previous</span>
+            {% endif %}
+            
+            <span class="page-info">Page {{ page }} of {{ position_data.total_pages }}</span>
+            
+            {% if page < position_data.total_pages %}
+            <a href="/?position={{ selected_position }}&mins={{ mins_threshold }}&sort={{ sort_by }}&order={{ sort_order }}&page={{ page + 1 }}" class="page-btn">Next →</a>
+            {% else %}
+            <span class="page-btn disabled">Next →</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+        let changeTimeout;
+        
+        function changePosition(position) {
+            // Get current mins threshold
+            const mins = document.getElementById('mins-slider').value;
+            // Always go to page 1 when changing position
+            window.location.href = '/?position=' + position + '&mins=' + mins + '&page=1';
+        }
+        
+        function updateMinsValue(value) {
+            // Update the displayed value
+            document.getElementById('mins-value').textContent = value + '%';
+            
+            // Clear existing timeout
+            clearTimeout(changeTimeout);
+            
+            // Set new timeout to reload page after user stops dragging (500ms delay)
+            changeTimeout = setTimeout(() => {
+                const position = document.getElementById('position-dropdown').value;
+                window.location.href = '/?position=' + position + '&mins=' + value + '&page=1';
+            }, 500);
+        }
+        
+        function sortTable(column) {
+            const urlParams = new URLSearchParams(window.location.search);
+            const currentSort = urlParams.get('sort');
+            const currentOrder = urlParams.get('order') || 'desc';
+            
+            const position = document.getElementById('position-dropdown').value;
+            const mins = document.getElementById('mins-slider').value;
+            
+            let newSort = column;
+            let newOrder = 'desc';
+            
+            // Three-state toggle: desc -> asc -> default (no sort)
+            if (currentSort === column) {
+                if (currentOrder === 'desc') {
+                    // Second click: switch to ascending
+                    newOrder = 'asc';
+                } else {
+                    // Third click: return to default (expected_points desc)
+                    newSort = 'expected_points';
+                    newOrder = 'desc';
+                }
+            }
+            
+            // Always go to page 1 when sorting
+            window.location.href = '/?position=' + position + '&mins=' + mins + '&sort=' + newSort + '&order=' + newOrder + '&page=1';
+        }
+    </script>
+</body>
+</html>
