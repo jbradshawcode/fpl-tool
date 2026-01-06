@@ -37,9 +37,21 @@
             padding: 1.5rem;
             margin-bottom: 2rem;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .selector-row-horizontal {
             display: flex;
-            flex-direction: column;
-            gap: 1.5rem;
+            align-items: center;
+            gap: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .selector-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex: 1;
+            min-width: 250px;
         }
 
         .selector-row {
@@ -51,21 +63,20 @@
         .position-selector label {
             font-weight: 600;
             color: #495057;
-            font-size: 1.1rem;
-            min-width: 200px;
+            font-size: 0.95rem;
+            white-space: nowrap;
         }
 
         #position-dropdown {
-            flex: 1;
-            max-width: 300px;
-            padding: 0.75rem 1rem;
-            font-size: 1rem;
+            padding: 0.65rem 1rem;
+            font-size: 0.95rem;
             border: 2px solid #dee2e6;
             border-radius: 8px;
             background: white;
             color: #495057;
             cursor: pointer;
             transition: all 0.2s;
+            min-width: 150px;
         }
 
         #position-dropdown:hover {
@@ -79,11 +90,11 @@
         }
 
         .slider-container {
-            flex: 1;
             display: flex;
             align-items: center;
-            gap: 1rem;
-            max-width: 400px;
+            gap: 0.75rem;
+            flex: 1;
+            min-width: 150px;
         }
 
         #mins-slider {
@@ -134,8 +145,8 @@
         .slider-value {
             font-weight: 700;
             color: #667eea;
-            font-size: 1.2rem;
-            min-width: 50px;
+            font-size: 0.95rem;
+            min-width: 85px;
             text-align: right;
         }
 
@@ -287,18 +298,25 @@
                 font-size: 1.75rem;
             }
 
-            .selector-row {
+            .selector-row-horizontal {
                 flex-direction: column;
                 align-items: stretch;
+                gap: 1rem;
+            }
+
+            .selector-item {
+                flex-direction: column;
+                align-items: stretch;
+                min-width: 100%;
             }
 
             .position-selector label {
-                min-width: auto;
+                text-align: left;
             }
 
             #position-dropdown,
             .slider-container {
-                max-width: 100%;
+                width: 100%;
             }
 
             table {
@@ -333,30 +351,48 @@
         
         <!-- Position Selector -->
         <div class="position-selector">
-            <div class="selector-row">
-                <label for="position-dropdown">Select Position:</label>
-                <select id="position-dropdown" onchange="changePosition(this.value)">
-                    {% for pos_code, pos_name in all_positions.items() %}
-                    <option value="{{ pos_code }}" {% if pos_code == selected_position %}selected{% endif %}>
-                        {{ pos_name }}
-                    </option>
-                    {% endfor %}
-                </select>
-            </div>
-            
-            <div class="selector-row">
-                <label for="mins-slider">Minimum Minutes Played:</label>
-                <div class="slider-container">
-                    <input 
-                        type="range" 
-                        id="mins-slider" 
-                        min="0" 
-                        max="100" 
-                        step="1" 
-                        value="{{ mins_threshold }}"
-                        oninput="updateMinsValue(this.value)"
-                    >
-                    <span class="slider-value" id="mins-value">{{ mins_threshold }}%</span>
+            <div class="selector-row-horizontal">
+                <div class="selector-item">
+                    <label for="position-dropdown">Select Position:</label>
+                    <select id="position-dropdown" onchange="changePosition(this.value)">
+                        {% for pos_code, pos_name in all_positions.items() %}
+                        <option value="{{ pos_code }}" {% if pos_code == selected_position %}selected{% endif %}>
+                            {{ pos_name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="selector-item">
+                    <label for="mins-slider">% of Mins Played:</label>
+                    <div class="slider-container">
+                        <input 
+                            type="range" 
+                            id="mins-slider" 
+                            min="0" 
+                            max="100" 
+                            step="1" 
+                            value="{{ mins_threshold }}"
+                            oninput="updateMinsValue(this.value)"
+                        >
+                        <span class="slider-value" id="mins-value">{{ mins_threshold }}%</span>
+                    </div>
+                </div>
+                
+                <div class="selector-item">
+                    <label for="games-slider">Recency Window:</label>
+                    <div class="slider-container">
+                        <input 
+                            type="range" 
+                            id="games-slider" 
+                            min="1" 
+                            max="{{ max_games }}" 
+                            step="1" 
+                            value="{{ time_period }}"
+                            oninput="updateGamesValue(this.value)"
+                        >
+                        <span class="slider-value" id="games-value">{{ time_period }}{% if time_period == 1 %} Game{% else %} Games{% endif %}{% if time_period == max_games %} (All){% endif %}</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -442,7 +478,7 @@
         <!-- Pagination Controls -->
         <div class="pagination">
             {% if page > 1 %}
-            <a href="/?position={{ selected_position }}&mins={{ mins_threshold }}&sort={{ sort_by }}&order={{ sort_order }}&page={{ page - 1 }}" class="page-btn">← Previous</a>
+            <a href="/?position={{ selected_position }}&mins={{ mins_threshold }}&games={{ time_period }}&sort={{ sort_by }}&order={{ sort_order }}&page={{ page - 1 }}" class="page-btn">← Previous</a>
             {% else %}
             <span class="page-btn disabled">← Previous</span>
             {% endif %}
@@ -450,7 +486,7 @@
             <span class="page-info">Page {{ page }} of {{ position_data.total_pages }}</span>
             
             {% if page < position_data.total_pages %}
-            <a href="/?position={{ selected_position }}&mins={{ mins_threshold }}&sort={{ sort_by }}&order={{ sort_order }}&page={{ page + 1 }}" class="page-btn">Next →</a>
+            <a href="/?position={{ selected_position }}&mins={{ mins_threshold }}&games={{ time_period }}&sort={{ sort_by }}&order={{ sort_order }}&page={{ page + 1 }}" class="page-btn">Next →</a>
             {% else %}
             <span class="page-btn disabled">Next →</span>
             {% endif %}
@@ -459,12 +495,14 @@
 
     <script>
         let changeTimeout;
+        const maxGames = {{ max_games }};
         
         function changePosition(position) {
-            // Get current mins threshold
+            // Get current mins threshold and games
             const mins = document.getElementById('mins-slider').value;
+            const games = document.getElementById('games-slider').value;
             // Always go to page 1 when changing position
-            window.location.href = '/?position=' + position + '&mins=' + mins + '&page=1';
+            window.location.href = '/?position=' + position + '&mins=' + mins + '&games=' + games + '&page=1';
         }
         
         function updateMinsValue(value) {
@@ -477,7 +515,26 @@
             // Set new timeout to reload page after user stops dragging (500ms delay)
             changeTimeout = setTimeout(() => {
                 const position = document.getElementById('position-dropdown').value;
-                window.location.href = '/?position=' + position + '&mins=' + value + '&page=1';
+                const games = document.getElementById('games-slider').value;
+                window.location.href = '/?position=' + position + '&mins=' + value + '&games=' + games + '&page=1';
+            }, 500);
+        }
+        
+        function updateGamesValue(value) {
+            // Update the displayed value
+            const gameSuffix = (value == 1) ? ' Game' : ' Games';
+            const allSuffix = (value == maxGames) ? ' (All)' : '';
+            const displayValue = value + gameSuffix + allSuffix;
+            document.getElementById('games-value').textContent = displayValue;
+            
+            // Clear existing timeout
+            clearTimeout(changeTimeout);
+            
+            // Set new timeout to reload page after user stops dragging (500ms delay)
+            changeTimeout = setTimeout(() => {
+                const position = document.getElementById('position-dropdown').value;
+                const mins = document.getElementById('mins-slider').value;
+                window.location.href = '/?position=' + position + '&mins=' + mins + '&games=' + value + '&page=1';
             }, 500);
         }
         
@@ -488,6 +545,7 @@
             
             const position = document.getElementById('position-dropdown').value;
             const mins = document.getElementById('mins-slider').value;
+            const games = document.getElementById('games-slider').value;
             
             let newSort = column;
             let newOrder = 'desc';
@@ -505,7 +563,7 @@
             }
             
             // Always go to page 1 when sorting
-            window.location.href = '/?position=' + position + '&mins=' + mins + '&sort=' + newSort + '&order=' + newOrder + '&page=1';
+            window.location.href = '/?position=' + position + '&mins=' + mins + '&games=' + games + '&sort=' + newSort + '&order=' + newOrder + '&page=1';
         }
     </script>
 </body>

@@ -78,10 +78,17 @@ def index():
     try:
         players_df, history_df, scoring = load_data()
         
-        # Get position, page, mins_threshold, and sort from query parameters
+        # Calculate max games available
+        max_games = int(history_df['round'].max()) if len(history_df) > 0 else 38
+        
+        # Default to 5 games or max if less than 5 available
+        default_games = min(5, max_games)
+        
+        # Get position, page, mins_threshold, time_period, and sort from query parameters
         selected_position = request.args.get('position', 'GKP', type=str)
         page = request.args.get('page', 1, type=int)
         mins_threshold = request.args.get('mins', 70, type=int)  # Default 70%
+        time_period = request.args.get('games', default_games, type=int)  # Default to 5 or max
         sort_by = request.args.get('sort', 'expected_points', type=str)  # Default sort by xP
         sort_order = request.args.get('order', 'desc', type=str)  # Default descending
         per_page = 10
@@ -93,12 +100,13 @@ def index():
             "FWD": "Forwards"
         }
         
-        # Get all players for selected position with mins threshold
+        # Get all players for selected position with mins threshold and time period
         df = calculations.expected_points_per_90(
             history_df=history_df,
             players_df=players_df,
             position=selected_position,
             mins_threshold=mins_threshold / 100,  # Convert percentage to decimal
+            time_period=time_period if time_period < max_games else None,  # None = all games
         )
         
         df = format_player_data(df)
@@ -141,6 +149,8 @@ def index():
             selected_position=selected_position,
             page=page,
             mins_threshold=mins_threshold,
+            time_period=time_period,
+            max_games=max_games,
             sort_by=sort_by,
             sort_order=sort_order
         )
