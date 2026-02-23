@@ -28,7 +28,7 @@ app = Flask(__name__)
 
 def open_browser():
     """Open the web browser to the Flask app URL."""
-    webbrowser.open_new('http://127.0.0.1:5001/')
+    webbrowser.open_new('http://127.0.0.1:5002/')
 
 
 def load_data():
@@ -165,4 +165,4 @@ if __name__ == '__main__':
     import os
     if os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
         Timer(1.5, open_browser).start()
-    app.run(debug=True, host='0.0.0.0', port=5001)
+    app.run(debug=True, host='0.0.0.0', port=5002)

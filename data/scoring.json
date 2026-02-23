@@ -42,6 +42,7 @@
         "GKP": 0,
         "MID": 2
     },
+    "starts": 0,
     "mng_goals_scored": {
         "DEF": 0,
         "FWD": 0,
@@ -79,7 +80,6 @@
         "GKP": 0,
         "MID": 0
     },
-    "starts": 0,
     "expected_assists": 0,
     "expected_goal_involvements": 0,
     "expected_goals_conceded": 0,
