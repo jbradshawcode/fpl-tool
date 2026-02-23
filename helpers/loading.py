@@ -33,7 +33,8 @@ def initialise_data(endpoint: str) -> dict:
         Dictionary containing:
         - 'players_df': pd.DataFrame of processed player data
         - 'history_df': pd.DataFrame of match histories
-        - 'scoring': dict of FPL scoring rules
+        - 'fdr_df':     pd.DataFrame of fixture difficulty ratings (all rounds)
+        - 'scoring':    dict of FPL scoring rules
 
     """
     data = retrieve_data(endpoint=endpoint)
@@ -42,11 +43,10 @@ def initialise_data(endpoint: str) -> dict:
 
 
 def _build_fixture_difficulty_map(fixtures: list[dict]) -> pd.DataFrame:
-    """Build a lookup table of fixture difficulty per player fixture.
+    """Build a lookup table of fixture difficulty for all fixtures.
 
-    For each fixture, the home team's difficulty is team_h_difficulty and
-    the away team's difficulty is team_a_difficulty. We store both sides
-    so we can join onto history_df by (element team, opponent team, round).
+    Each fixture produces two rows — one per team perspective.
+    Includes both past and future fixtures.
 
     Parameters
     ----------
@@ -56,9 +56,7 @@ def _build_fixture_difficulty_map(fixtures: list[dict]) -> pd.DataFrame:
     Returns
     -------
     pd.DataFrame
-        Columns: fixture (int), difficulty (int), was_home (bool)
-        Indexed to make joining straightforward. Each row represents one
-        team's perspective for a given fixture.
+        Columns: round, team_id, opponent_id, fixture_difficulty, was_home
 
     """
     rows = []
@@ -86,9 +84,9 @@ def _build_fixture_difficulty_map(fixtures: list[dict]) -> pd.DataFrame:
 def _merge_fixture_difficulty(
     history_df: pd.DataFrame,
     players_df: pd.DataFrame,
-    fixtures: list[dict],
+    fdr_df: pd.DataFrame,
 ) -> pd.DataFrame:
-    """Join fixture difficulty and was_home onto the player history DataFrame.
+    """Join fixture difficulty onto the player history DataFrame.
 
     Parameters
     ----------
@@ -96,25 +94,19 @@ def _merge_fixture_difficulty(
         Player match-history table (element, round, opponent_team_name, ...).
     players_df : pd.DataFrame
         Player metadata; used to look up each player's team ID.
-    fixtures : list[dict]
-        Raw fixture objects from the FPL fixtures endpoint.
+    fdr_df : pd.DataFrame
+        Fixture difficulty map from _build_fixture_difficulty_map.
 
     Returns
     -------
     pd.DataFrame
-        history_df with two new columns appended:
-        - fixture_difficulty : int  (1 = easy … 5 = hard, from the player's perspective)
-        - was_home           : bool
+        history_df with fixture_difficulty column appended.
 
     """
-    fdr_df = _build_fixture_difficulty_map(fixtures)
-
-    # Map each history row's element → team_id using players_df
-    element_to_team = players_df["team"]  # Series: index=player_id, values=team_id
+    element_to_team = players_df["team"]
     history_df = history_df.copy()
     history_df["_team_id"] = history_df["element"].map(element_to_team)
 
-    # Join on (round, team_id)
     history_df = history_df.merge(
         fdr_df[["round", "team_id", "fixture_difficulty"]],
         left_on=["round", "_team_id"],
@@ -122,26 +114,18 @@ def _merge_fixture_difficulty(
         how="left",
     ).drop(columns=["_team_id", "team_id"])
 
+    # In double gameweeks a team appears twice in the same round — average the
+    # difficulty across those fixtures so we get one row per (element, round)
+    history_df["fixture_difficulty"] = history_df.groupby(
+        ["element", "round"]
+    )["fixture_difficulty"].transform("mean")
+    history_df = history_df.drop_duplicates(subset=["element", "round"]).reset_index(drop=True)
+
     return history_df
 
 
 def retrieve_data(endpoint: str) -> dict:
-    """Retrieve FPL data and build DataFrames without saving to disk.
-
-    Parameters
-    ----------
-    endpoint : str
-        Relative API endpoint to fetch (e.g., "bootstrap-static/").
-
-    Returns
-    -------
-    dict
-        Dictionary containing:
-        - 'players_df': pd.DataFrame of processed player data
-        - 'history_df': pd.DataFrame of match histories (with fixture difficulty)
-        - 'scoring': dict of FPL scoring rules
-
-    """
+    """Retrieve FPL data and build DataFrames without saving to disk."""
     try:
         logger.info("Fetching static data...")
         data = fetch_data(endpoint=endpoint)
@@ -157,20 +141,22 @@ def retrieve_data(endpoint: str) -> dict:
 
     logger.info("Fetching fixtures and merging difficulty ratings...")
     fixtures = fetch_data("fixtures/")
-    history_df = _merge_fixture_difficulty(history_df, players_df, fixtures)
+    fdr_df = _build_fixture_difficulty_map(fixtures)
+    history_df = _merge_fixture_difficulty(history_df, players_df, fdr_df)
 
     scoring = data["game_config"]["scoring"]
 
-    return {"players_df": players_df, "history_df": history_df, "scoring": scoring}
+    return {
+        "players_df": players_df,
+        "history_df": history_df,
+        "fdr_df": fdr_df,
+        "scoring": scoring,
+    }
 
 
 def save_data(data: dict) -> None:
-    """Save player, history, and scoring data to local files.
-
-    Args:
-        data: Dictionary containing 'players_df', 'history_df', and 'scoring' keys.
-    """
-    required_keys = ['players_df', 'history_df', 'scoring']
+    """Save player, history, fdr, and scoring data to local files."""
+    required_keys = ['players_df', 'history_df', 'fdr_df', 'scoring']
     missing_keys = [key for key in required_keys if key not in data]
     if missing_keys:
         raise ValueError(f"Missing required keys in data dict: {missing_keys}")
@@ -181,6 +167,7 @@ def save_data(data: dict) -> None:
     try:
         data["players_df"].to_csv(data_dir / "players_data.csv", index=True, index_label='id')
         data["history_df"].to_csv(data_dir / "player_histories.csv", index=False)
+        data["fdr_df"].to_csv(data_dir / "fixture_difficulty_ratings.csv", index=False)
 
         with (data_dir / "scoring.json").open("w") as f:
             json.dump(data["scoring"], f, indent=4)
@@ -190,12 +177,7 @@ def save_data(data: dict) -> None:
 
 
 def load_parameters() -> dict:
-    """Load and return parameters from the parameters.json file.
-
-    Returns:
-        dict: Dictionary containing the loaded parameters.
-
-    """
+    """Load and return parameters from the parameters.json file."""
     try:
         with Path("data/parameters.json").open() as f:
             return json.load(f)

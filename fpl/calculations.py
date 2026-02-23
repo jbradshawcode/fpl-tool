@@ -86,6 +86,10 @@ def expected_points_per_90(
     if position is not None:
         df = df[df["pos_abbr"] == position]
 
+    # Ensure numeric dtypes (columns may be object after CSV round-trip)
+    for col in ["minutes", "expected_points", "total_points", "fixture_difficulty"]:
+        df[col] = pd.to_numeric(df[col], errors="coerce")
+
     # Group by player and fixture (opponent disambiguates double gameweeks)
     grouped = df.groupby(["element", "round", "opponent_team_name"]).agg(
         total_minutes=("minutes", "sum"),

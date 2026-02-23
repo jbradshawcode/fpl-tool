@@ -36,9 +36,10 @@ def load_data():
     # Fetch/update histories
     if should_update():
         data = initialise_data(endpoint=BOOTSTRAP_STATIC_ENDPOINT)
-        players_df, history_df, scoring = (
+        players_df, history_df, fdr_df, scoring = (
             data["players_df"],
             data["history_df"],
+            data["fdr_df"],
             data["scoring"],
         )
         mark_updated()
@@ -46,6 +47,10 @@ def load_data():
         logger.info("Loading data from local files...")
         players_df = pd.read_csv("data/players_data.csv", index_col='id')
         history_df = pd.read_csv("data/player_histories.csv")
+        fdr_df = pd.read_csv("data/fixture_difficulty_ratings.csv")
+        fdr_df["round"] = fdr_df["round"].astype(int)
+        fdr_df["team_id"] = fdr_df["team_id"].astype(int)
+        fdr_df["fixture_difficulty"] = fdr_df["fixture_difficulty"].astype(int)
 
         with Path("data/scoring.json").open() as f:
             scoring = json.load(f)
@@ -57,7 +62,7 @@ def load_data():
         scoring=scoring,
     )
 
-    return players_df, history_df, scoring
+    return players_df, history_df, fdr_df, scoring
 
 
 def format_player_data(df: pd.DataFrame) -> pd.DataFrame:
@@ -76,7 +81,7 @@ def format_player_data(df: pd.DataFrame) -> pd.DataFrame:
 def index():
     """Main page displaying player rankings by position."""
     try:
-        players_df, history_df, scoring = load_data()
+        players_df, history_df, fdr_df, scoring = load_data()
         
         # Calculate max games available
         max_games = int(history_df['round'].max()) if len(history_df) > 0 else 38
