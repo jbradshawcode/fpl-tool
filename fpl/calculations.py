@@ -171,33 +171,39 @@ def expected_points_per_90(
     )
 
     # Build scale: horizon_factor / recency_factor (1.0 if adjustment off)
+    grouped["avg_fixture_difficulty"] = grouped["avg_fixture_difficulty"].fillna(3.0)  # neutral if unknown
     grouped["recency_factor"] = np.interp(grouped["avg_fixture_difficulty"], xp, yp)
 
     if fdr_df is not None and horizon is not None:
         horizon_factor = compute_horizon_factor(
             players_df, fdr_df, latest_round, horizon, xp, yp
         )
-        grouped["horizon_factor"] = horizon_factor.reindex(grouped.index)
-        scale = (grouped["horizon_factor"] / grouped["recency_factor"]).fillna(1.0)
+        grouped["horizon_factor"] = horizon_factor.reindex(grouped.index).fillna(1.0)
+        scale = (grouped["horizon_factor"] / grouped["recency_factor"]).fillna(1.0).replace([np.inf, -np.inf], 1.0)
     else:
         grouped["horizon_factor"] = np.nan
         scale = 1.0
 
-    # Calculate per-90 metrics, applying scale directly to xP
+    # Safe division — 0 minutes gives 0 rather than NaN
+    safe_minutes = grouped["total_minutes"].replace(0, np.nan)
     grouped["expected_points_per_90"] = (
-        grouped["total_expected_points"] / grouped["total_minutes"]
-    ) * 90 * scale
+        (grouped["total_expected_points"] / safe_minutes) * 90 * scale
+    ).fillna(0)
     grouped["actual_points_per_90"] = (
-        grouped["total_actual_points"] / grouped["total_minutes"]
-    ) * 90
+        (grouped["total_actual_points"] / safe_minutes) * 90
+    ).fillna(0)
     # Count fixtures per player (each row in df is one fixture)
     fixtures_per_player = df.groupby("element").size().rename("fixture_count")
     grouped["fixture_count"] = fixtures_per_player.reindex(grouped.index)
-    grouped["percentage_of_mins_played"] = grouped["total_minutes"] / (
-        grouped["fixture_count"] * 90
-    )
-    grouped["actual_points"] = grouped["total_actual_points"] / grouped["fixture_count"]
-    grouped["expected_points"] = grouped["expected_points_per_90"] * grouped["percentage_of_mins_played"]
+    grouped["percentage_of_mins_played"] = (
+        grouped["total_minutes"] / (grouped["fixture_count"] * 90)
+    ).fillna(0)
+    grouped["actual_points"] = (
+        grouped["total_actual_points"] / grouped["fixture_count"]
+    ).fillna(0)
+    grouped["expected_points"] = (
+        grouped["expected_points_per_90"] * grouped["percentage_of_mins_played"]
+    ).fillna(0)
 
     # Apply minutes filter
     if mins_threshold is not None:

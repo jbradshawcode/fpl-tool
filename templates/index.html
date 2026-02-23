@@ -623,7 +623,7 @@
         <!-- Pagination -->
         <div class="pagination">
             {% if page > 1 %}
-            <a href="/?position={{ selected_position }}&mins={{ mins_threshold }}&games={{ time_period }}&sort={{ sort_by }}&order={{ sort_order }}&team={{ selected_team }}&price_max={{ price_max }}&page={{ page - 1 }}" class="page-btn">← Previous</a>
+            <a href="/?position={{ selected_position }}&mins={{ mins_threshold }}&games={{ time_period }}&sort={{ sort_by }}&order={{ sort_order }}&team={{ selected_team }}&price_max={{ price_max }}&adjust_difficulty={{ adjust_difficulty|lower }}&horizon={{ horizon }}&page={{ page - 1 }}" class="page-btn">← Previous</a>
             {% else %}
             <span class="page-btn disabled">← Previous</span>
             {% endif %}
@@ -631,7 +631,7 @@
             <span class="page-info">Page {{ page }} of {{ position_data.total_pages }}</span>
             
             {% if page < position_data.total_pages %}
-            <a href="/?position={{ selected_position }}&mins={{ mins_threshold }}&games={{ time_period }}&sort={{ sort_by }}&order={{ sort_order }}&team={{ selected_team }}&price_max={{ price_max }}&page={{ page + 1 }}" class="page-btn">Next →</a>
+            <a href="/?position={{ selected_position }}&mins={{ mins_threshold }}&games={{ time_period }}&sort={{ sort_by }}&order={{ sort_order }}&team={{ selected_team }}&price_max={{ price_max }}&adjust_difficulty={{ adjust_difficulty|lower }}&horizon={{ horizon }}&page={{ page + 1 }}" class="page-btn">Next →</a>
             {% else %}
             <span class="page-btn disabled">Next →</span>
             {% endif %}
@@ -648,7 +648,7 @@
             pill.setAttribute('data-on', nowOn);
             pill.querySelector('.pill-label').textContent = nowOn ? 'On' : 'Off';
             document.getElementById('future-window-item').style.display = nowOn ? 'flex' : 'none';
-            applyFilters();
+            applyFilters({ keepPage: true });
         }
 
         // ── helpers ──────────────────────────────────────────────────────────
@@ -672,7 +672,7 @@
 
         // ── main navigate ────────────────────────────────────────────────────
 
-        function applyFilters() {
+        function applyFilters({ keepPage = false } = {}) {
             clearTimeout(changeTimeout);
             const currentPosition = document.getElementById('position-dropdown').value;
             const positionChanged = currentPosition !== lastPosition;
@@ -687,7 +687,7 @@
                 horizon:           document.getElementById('future-slider').value,
                 sort:              '{{ sort_by }}',
                 order:             '{{ sort_order }}',
-                page:              1,
+                page:              keepPage ? {{ page }} : 1,
             });
 
             // Only carry price_max if position hasn't changed — otherwise let
