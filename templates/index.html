@@ -121,6 +121,12 @@
             flex-wrap: nowrap;
         }
 
+        .selector-row-sliders label {
+            white-space: nowrap;
+            width: 100px;
+            flex-shrink: 0;
+        }
+
         .selector-row-sliders {
             display: flex;
             align-items: center;
@@ -661,20 +667,31 @@
             changeTimeout = setTimeout(applyFilters, 500);
         }
 
+        let lastPosition = '{{ selected_position }}';
+
         // ── main navigate ────────────────────────────────────────────────────
 
         function applyFilters() {
             clearTimeout(changeTimeout);
+            const currentPosition = document.getElementById('position-dropdown').value;
+            const positionChanged = currentPosition !== lastPosition;
+
             const params = new URLSearchParams({
-                position:  document.getElementById('position-dropdown').value,
+                position:  currentPosition,
                 team:      document.getElementById('team-dropdown').value,
                 mins:      document.getElementById('mins-slider').value,
                 games:     document.getElementById('games-slider').value,
-                price_max: parseFloat(document.getElementById('price-slider').value).toFixed(1),
                 sort:      '{{ sort_by }}',
                 order:     '{{ sort_order }}',
                 page:      1,
             });
+
+            // Only carry price_max if position hasn't changed — otherwise let
+            // the backend reset it to the new position's maximum
+            if (!positionChanged) {
+                params.set('price_max', parseFloat(document.getElementById('price-slider').value).toFixed(1));
+            }
+
             window.location.href = '/?' + params.toString();
         }
 
