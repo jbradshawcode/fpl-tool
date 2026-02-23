@@ -41,11 +41,17 @@
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
 
-        .selector-row-horizontal {
+        .selector-row-dropdowns {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .selector-row-sliders {
             display: flex;
             align-items: center;
             gap: 2rem;
-            flex-wrap: wrap;
         }
 
         .selector-item {
@@ -53,13 +59,7 @@
             align-items: center;
             gap: 0.75rem;
             flex: 1 1 0;
-            min-width: 250px;
-        }
-
-        .selector-row {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
+            min-width: 220px;
         }
 
         .position-selector label {
@@ -69,7 +69,7 @@
             white-space: nowrap;
         }
 
-        #position-dropdown {
+        select.filter-select {
             padding: 0.65rem 1rem;
             font-size: 0.95rem;
             border: 2px solid #dee2e6;
@@ -79,13 +79,14 @@
             cursor: pointer;
             transition: all 0.2s;
             min-width: 150px;
+            flex: 1;
         }
 
-        #position-dropdown:hover {
+        select.filter-select:hover {
             border-color: #667eea;
         }
 
-        #position-dropdown:focus {
+        select.filter-select:focus {
             outline: none;
             border-color: #667eea;
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
@@ -99,7 +100,7 @@
             min-width: 150px;
         }
 
-        #mins-slider {
+        input[type="range"] {
             flex: 1;
             height: 8px;
             border-radius: 5px;
@@ -109,7 +110,7 @@
             appearance: none;
         }
 
-        #mins-slider::-webkit-slider-thumb {
+        input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
             width: 24px;
@@ -121,13 +122,13 @@
             transition: all 0.2s;
         }
 
-        #mins-slider::-webkit-slider-thumb:hover {
+        input[type="range"]::-webkit-slider-thumb:hover {
             background: #5568d3;
             transform: scale(1.1);
             box-shadow: 0 3px 6px rgba(0,0,0,0.3);
         }
 
-        #mins-slider::-moz-range-thumb {
+        input[type="range"]::-moz-range-thumb {
             width: 24px;
             height: 24px;
             border-radius: 50%;
@@ -138,7 +139,7 @@
             transition: all 0.2s;
         }
 
-        #mins-slider::-moz-range-thumb:hover {
+        input[type="range"]::-moz-range-thumb:hover {
             background: #5568d3;
             transform: scale(1.1);
             box-shadow: 0 3px 6px rgba(0,0,0,0.3);
@@ -148,7 +149,7 @@
             font-weight: 700;
             color: #667eea;
             font-size: 0.95rem;
-            min-width: 85px;
+            min-width: 75px;
             text-align: right;
         }
 
@@ -287,263 +288,66 @@
             font-size: 0.85rem;
         }
 
-        .highlight {
-            background-color: #d4edda;
-        }
-
         .rank {
             font-weight: 600;
             color: #667eea;
         }
 
         @media (max-width: 768px) {
-            body {
-                padding: 0.5rem;
-            }
-
-            h1 {
-                font-size: 1.5rem;
-                margin-bottom: 1rem;
-            }
-
-            .position-selector {
-                padding: 1rem;
-            }
-
-            .selector-row-horizontal {
-                gap: 1rem;
-            }
-
-            .selector-item {
-                flex: 1 1 0;
-                min-width: 0;
-                gap: 0.5rem;
-            }
-
-            .position-selector label {
-                font-size: 0.8rem;
-                white-space: nowrap;
-            }
-
-            #position-dropdown {
-                padding: 0.5rem 0.75rem;
-                font-size: 0.85rem;
-                min-width: 0;
-                flex: 1;
-            }
-
-            .slider-container {
-                min-width: 0;
-                flex: 1;
-                gap: 0.5rem;
-            }
-
-            #mins-slider,
-            #games-slider {
-                height: 10px;
-                flex: 1;
-            }
-
-            #mins-slider::-webkit-slider-thumb,
-            #games-slider::-webkit-slider-thumb {
-                width: 28px;
-                height: 28px;
-            }
-
-            #mins-slider::-moz-range-thumb,
-            #games-slider::-moz-range-thumb {
-                width: 28px;
-                height: 28px;
-            }
-
-            .slider-value {
-                font-size: 0.85rem;
-                min-width: 70px;
-            }
-
-            .position-section {
-                padding: 1rem;
-            }
-
-            .section-header {
-                flex-direction: row;
-                justify-content: space-between;
-                align-items: center;
-                gap: 0.5rem;
-            }
-
-            .position-title {
-                font-size: 1.2rem;
-            }
-
-            .player-count {
-                font-size: 0.75rem;
-            }
-
-            table {
-                font-size: 0.75rem;
-            }
-
-            th, td {
-                padding: 0.4rem 0.2rem;
-            }
-
-            th.sortable {
-                padding: 0.4rem 0.15rem;
-            }
-
-            .sort-arrow {
-                font-size: 0.7rem;
-            }
-
-            .pagination {
-                flex-wrap: nowrap;
-                gap: 0.5rem;
-                padding: 0.75rem;
-            }
-
-            .page-btn {
-                padding: 0.5rem 0.75rem;
-                font-size: 0.85rem;
-            }
-
-            .page-info {
-                font-size: 0.85rem;
-            }
+            body { padding: 0.5rem; }
+            h1 { font-size: 1.5rem; margin-bottom: 1rem; }
+            .position-selector { padding: 1rem; }
+            .selector-row-dropdowns { gap: 1rem; }
+            .selector-row-sliders { gap: 1rem; flex-wrap: wrap; }
+            .selector-item { flex: 1 1 0; min-width: 0; gap: 0.5rem; }
+            .position-selector label { font-size: 0.8rem; }
+            select.filter-select { padding: 0.5rem 0.75rem; font-size: 0.85rem; min-width: 0; }
+            .slider-container { min-width: 0; flex: 1; gap: 0.5rem; }
+            input[type="range"] { height: 10px; }
+            input[type="range"]::-webkit-slider-thumb { width: 28px; height: 28px; }
+            input[type="range"]::-moz-range-thumb { width: 28px; height: 28px; }
+            .slider-value { font-size: 0.85rem; min-width: 65px; }
+            .position-section { padding: 1rem; }
+            .position-title { font-size: 1.2rem; }
+            .player-count { font-size: 0.75rem; }
+            table { font-size: 0.75rem; }
+            th, td { padding: 0.4rem 0.2rem; }
+            .pagination { flex-wrap: nowrap; gap: 0.5rem; padding: 0.75rem; }
+            .page-btn { padding: 0.5rem 0.75rem; font-size: 0.85rem; }
+            .page-info { font-size: 0.85rem; }
         }
 
-        /* Landscape mobile/tablet optimization - keeps controls on one line */
         @media (max-width: 926px) and (orientation: landscape) {
-            body {
-                padding: 0.5rem;
-            }
-
-            h1 {
-                font-size: 1.25rem;
-                margin-bottom: 0.5rem;
-            }
-
-            .position-selector {
-                padding: 0.5rem 0.75rem;
-            }
-
-            .selector-row-horizontal {
-                gap: 0.5rem;
-                flex-wrap: nowrap;
-            }
-
-            .selector-item {
-                min-width: 0;
-                flex: 1 1 0;
-                gap: 0.35rem;
-            }
-
-            .position-selector label {
-                font-size: 0.7rem;
-                white-space: nowrap;
-            }
-
-            #position-dropdown {
-                font-size: 0.75rem;
-                padding: 0.35rem 0.5rem;
-                min-width: 90px;
-                flex: 1;
-            }
-
-            .slider-container {
-                min-width: 0;
-                flex: 1;
-                gap: 0.35rem;
-            }
-
-            #mins-slider,
-            #games-slider {
-                height: 8px;
-                min-width: 60px;
-            }
-
-            #mins-slider::-webkit-slider-thumb,
-            #games-slider::-webkit-slider-thumb {
-                width: 24px;
-                height: 24px;
-            }
-
-            #mins-slider::-moz-range-thumb,
-            #games-slider::-moz-range-thumb {
-                width: 24px;
-                height: 24px;
-            }
-
-            .slider-value {
-                font-size: 0.75rem;
-                min-width: 60px;
-            }
-
-            .position-section {
-                padding: 0.75rem;
-            }
-
-            .section-header {
-                margin-bottom: 0.5rem;
-            }
-
-            .position-title {
-                font-size: 1rem;
-            }
-
-            .player-count {
-                font-size: 0.7rem;
-            }
-
-            table {
-                font-size: 0.7rem;
-            }
-
-            th, td {
-                padding: 0.35rem 0.15rem;
-            }
-
-            .pagination {
-                padding: 0.5rem;
-                margin: 0.75rem 0;
-            }
-
-            .page-btn {
-                padding: 0.4rem 0.75rem;
-                font-size: 0.8rem;
-            }
-
-            .page-info {
-                font-size: 0.8rem;
-            }
+            body { padding: 0.5rem; }
+            h1 { font-size: 1.25rem; margin-bottom: 0.5rem; }
+            .position-selector { padding: 0.5rem 0.75rem; }
+            .selector-row-dropdowns { gap: 0.5rem; margin-bottom: 0.5rem; }
+            .selector-row-sliders { gap: 0.5rem; }
+            .selector-item { min-width: 0; flex: 1 1 0; gap: 0.35rem; }
+            .position-selector label { font-size: 0.7rem; }
+            select.filter-select { font-size: 0.75rem; padding: 0.35rem 0.5rem; min-width: 80px; }
+            .slider-container { min-width: 0; flex: 1; gap: 0.35rem; }
+            input[type="range"] { height: 8px; min-width: 50px; }
+            input[type="range"]::-webkit-slider-thumb { width: 24px; height: 24px; }
+            input[type="range"]::-moz-range-thumb { width: 24px; height: 24px; }
+            .slider-value { font-size: 0.75rem; min-width: 55px; }
+            .position-section { padding: 0.75rem; }
+            .position-title { font-size: 1rem; }
+            .player-count { font-size: 0.7rem; }
+            table { font-size: 0.7rem; }
+            th, td { padding: 0.35rem 0.15rem; }
+            .pagination { padding: 0.5rem; margin: 0.75rem 0; }
+            .page-btn { padding: 0.4rem 0.75rem; font-size: 0.8rem; }
+            .page-info { font-size: 0.8rem; }
         }
 
-        /* Extra small devices (phones in portrait, less than 576px) */
         @media (max-width: 576px) {
-            .selector-row-horizontal {
-                flex-direction: column;
-                align-items: stretch;
-                gap: 0.75rem;
-            }
-
-            .selector-item {
-                flex-direction: row;
-                align-items: center;
-                min-width: 100%;
-                justify-content: space-between;
-            }
-
-            .position-selector label {
-                flex-shrink: 0;
-            }
-
-            #position-dropdown {
-                flex: 1;
-            }
-
-            .slider-container {
-                flex: 1;
-            }
+            .selector-row-dropdowns,
+            .selector-row-sliders { flex-direction: column; align-items: stretch; gap: 0.75rem; }
+            .selector-item { flex-direction: row; align-items: center; min-width: 100%; justify-content: space-between; }
+            .position-selector label { flex-shrink: 0; }
+            select.filter-select { flex: 1; }
+            .slider-container { flex: 1; }
         }
     </style>
 </head>
@@ -551,12 +355,16 @@
     <div class="container">
         <h1>⚽ FPL Expected Points Analysis</h1>
         
-        <!-- Position Selector -->
+        <!-- Filters -->
         <div class="position-selector">
-            <div class="selector-row-horizontal">
+
+            <!-- Row 1: Dropdowns (left-aligned) -->
+            <div class="selector-row-dropdowns">
+
                 <div class="selector-item">
-                    <label for="position-dropdown">Select Position:</label>
-                    <select id="position-dropdown" onchange="changePosition(this.value)">
+                    <label for="position-dropdown">Position:</label>
+                    <select id="position-dropdown" class="filter-select" onchange="applyFilters()">
+                        <option value="" {% if selected_position == '' %}selected{% endif %}>All Positions</option>
                         {% for pos_code, pos_name in all_positions.items() %}
                         <option value="{{ pos_code }}" {% if pos_code == selected_position %}selected{% endif %}>
                             {{ pos_name }}
@@ -564,125 +372,128 @@
                         {% endfor %}
                     </select>
                 </div>
-                
+
                 <div class="selector-item">
-                    <label for="mins-slider">% of Mins Played:</label>
+                    <label for="team-dropdown">Team:</label>
+                    <select id="team-dropdown" class="filter-select" onchange="applyFilters()">
+                        <option value="">All Teams</option>
+                        {% for team in all_teams %}
+                        <option value="{{ team }}" {% if team == selected_team %}selected{% endif %}>{{ team }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+            </div>
+
+            <!-- Row 2: Sliders -->
+            <div class="selector-row-sliders">
+
+                <div class="selector-item">
+                    <label for="mins-slider">Mins Played:</label>
                     <div class="slider-container">
                         <input 
                             type="range" 
                             id="mins-slider" 
-                            min="0" 
-                            max="100" 
-                            step="1" 
+                            min="0" max="100" step="1" 
                             value="{{ mins_threshold }}"
-                            oninput="updateMinsValue(this.value)"
+                            oninput="updateLabel('mins-value', this.value + '%'); scheduleApply()"
                         >
                         <span class="slider-value" id="mins-value">{{ mins_threshold }}%</span>
                     </div>
                 </div>
-                
+
                 <div class="selector-item">
-                    <label for="games-slider">Recency Window:</label>
+                    <label for="games-slider">Recency:</label>
                     <div class="slider-container">
                         <input 
                             type="range" 
                             id="games-slider" 
-                            min="1" 
-                            max="{{ max_games }}" 
-                            step="1" 
+                            min="1" max="{{ max_games }}" step="1" 
                             value="{{ time_period }}"
-                            oninput="updateGamesValue(this.value)"
+                            oninput="updateGamesLabel(this.value); scheduleApply()"
                         >
                         <span class="slider-value" id="games-value">{{ time_period }}{% if time_period == 1 %} Game{% else %} Games{% endif %}{% if time_period == max_games %} (All){% endif %}</span>
                     </div>
                 </div>
+
+                <div class="selector-item">
+                    <label for="price-slider">Max Price:</label>
+                    <div class="slider-container">
+                        <input 
+                            type="range" 
+                            id="price-slider" 
+                            min="{{ global_price_min }}" max="{{ global_price_max }}" step="0.1" 
+                            value="{{ price_max }}"
+                            oninput="updateLabel('price-value', '£' + parseFloat(this.value).toFixed(1) + 'm'); scheduleApply()"
+                        >
+                        <span class="slider-value" id="price-value">£{{ "%.1f"|format(price_max) }}m</span>
+                    </div>
+                </div>
+
             </div>
+
         </div>
         
-        <!-- Position Section -->
+        <!-- Results -->
         <div class="position-section">
             <div class="section-header">
                 <h2 class="position-title">{{ position_data.name }}</h2>
-                <p class="player-count">Showing {{ position_data.start_rank }}-{{ position_data.end_rank }} of {{ position_data.total_players }} players</p>
+                <p class="player-count">Showing {{ position_data.start_rank }}–{{ position_data.end_rank }} of {{ position_data.total_players }} players</p>
             </div>
             <div class="table-wrapper">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Rank</th>
-                        <th class="sortable" onclick="sortTable('web_name')">
-                            Player
-                            {% if sort_by == 'web_name' %}
-                                <span class="sort-arrow">{{ '▼' if sort_order == 'desc' else '▲' }}</span>
-                            {% endif %}
-                        </th>
-                        <th class="sortable" onclick="sortTable('team_name')">
-                            Team
-                            {% if sort_by == 'team_name' %}
-                                <span class="sort-arrow">{{ '▼' if sort_order == 'desc' else '▲' }}</span>
-                            {% endif %}
-                        </th>
-                        <th class="numeric sortable" onclick="sortTable('now_cost')">
-                            Cost
-                            {% if sort_by == 'now_cost' %}
-                                <span class="sort-arrow">{{ '▼' if sort_order == 'desc' else '▲' }}</span>
-                            {% endif %}
-                        </th>
-                        <th class="numeric sortable" onclick="sortTable('percentage_of_mins_played')">
-                            Mins %
-                            {% if sort_by == 'percentage_of_mins_played' %}
-                                <span class="sort-arrow">{{ '▼' if sort_order == 'desc' else '▲' }}</span>
-                            {% endif %}
-                        </th>
-                        <th class="numeric sortable" onclick="sortTable('expected_points')">
-                            xP
-                            {% if sort_by == 'expected_points' %}
-                                <span class="sort-arrow">{{ '▼' if sort_order == 'desc' else '▲' }}</span>
-                            {% endif %}
-                        </th>
-                        <th class="numeric sortable" onclick="sortTable('actual_points')">
-                            AP
-                            {% if sort_by == 'actual_points' %}
-                                <span class="sort-arrow">{{ '▼' if sort_order == 'desc' else '▲' }}</span>
-                            {% endif %}
-                        </th>
-                        <th class="numeric sortable" onclick="sortTable('expected_points_per_90')">
-                            xP/90
-                            {% if sort_by == 'expected_points_per_90' %}
-                                <span class="sort-arrow">{{ '▼' if sort_order == 'desc' else '▲' }}</span>
-                            {% endif %}
-                        </th>
-                        <th class="numeric sortable" onclick="sortTable('actual_points_per_90')">
-                            AP/90
-                            {% if sort_by == 'actual_points_per_90' %}
-                                <span class="sort-arrow">{{ '▼' if sort_order == 'desc' else '▲' }}</span>
-                            {% endif %}
-                        </th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for player in position_data.players %}
-                    <tr>
-                        <td class="rank">{{ player.rank|int }}</td>
-                        <td class="player-name">{{ player.web_name }}</td>
-                        <td class="team-name">{{ player.team_name }}</td>
-                        <td class="numeric">£{{ "%.1f"|format(player.now_cost) }}</td>
-                        <td class="numeric">{{ "%.2f"|format(player.percentage_of_mins_played) }}%</td>
-                        <td class="numeric">{{ "%.2f"|format(player.expected_points) }}</td>
-                        <td class="numeric">{{ "%.2f"|format(player.actual_points) }}</td>
-                        <td class="numeric">{{ "%.2f"|format(player.expected_points_per_90) }}</td>
-                        <td class="numeric">{{ "%.2f"|format(player.actual_points_per_90) }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th class="sortable" onclick="sortTable('web_name')">
+                                Player{% if sort_by == 'web_name' %}<span class="sort-arrow">{{ '▼' if sort_order == 'desc' else '▲' }}</span>{% endif %}
+                            </th>
+                            <th class="sortable" onclick="sortTable('team_name')">
+                                Team{% if sort_by == 'team_name' %}<span class="sort-arrow">{{ '▼' if sort_order == 'desc' else '▲' }}</span>{% endif %}
+                            </th>
+                            <th class="numeric sortable" onclick="sortTable('now_cost')">
+                                Cost{% if sort_by == 'now_cost' %}<span class="sort-arrow">{{ '▼' if sort_order == 'desc' else '▲' }}</span>{% endif %}
+                            </th>
+                            <th class="numeric sortable" onclick="sortTable('percentage_of_mins_played')">
+                                Mins %{% if sort_by == 'percentage_of_mins_played' %}<span class="sort-arrow">{{ '▼' if sort_order == 'desc' else '▲' }}</span>{% endif %}
+                            </th>
+                            <th class="numeric sortable" onclick="sortTable('expected_points')">
+                                xP{% if sort_by == 'expected_points' %}<span class="sort-arrow">{{ '▼' if sort_order == 'desc' else '▲' }}</span>{% endif %}
+                            </th>
+                            <th class="numeric sortable" onclick="sortTable('actual_points')">
+                                AP{% if sort_by == 'actual_points' %}<span class="sort-arrow">{{ '▼' if sort_order == 'desc' else '▲' }}</span>{% endif %}
+                            </th>
+                            <th class="numeric sortable" onclick="sortTable('expected_points_per_90')">
+                                xP/90{% if sort_by == 'expected_points_per_90' %}<span class="sort-arrow">{{ '▼' if sort_order == 'desc' else '▲' }}</span>{% endif %}
+                            </th>
+                            <th class="numeric sortable" onclick="sortTable('actual_points_per_90')">
+                                AP/90{% if sort_by == 'actual_points_per_90' %}<span class="sort-arrow">{{ '▼' if sort_order == 'desc' else '▲' }}</span>{% endif %}
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for player in position_data.players %}
+                        <tr>
+                            <td class="rank">{{ player.rank|int }}</td>
+                            <td class="player-name">{{ player.web_name }}</td>
+                            <td class="team-name">{{ player.team_name }}</td>
+                            <td class="numeric">£{{ "%.1f"|format(player.now_cost) }}m</td>
+                            <td class="numeric">{{ "%.2f"|format(player.percentage_of_mins_played) }}%</td>
+                            <td class="numeric">{{ "%.2f"|format(player.expected_points) }}</td>
+                            <td class="numeric">{{ "%.2f"|format(player.actual_points) }}</td>
+                            <td class="numeric">{{ "%.2f"|format(player.expected_points_per_90) }}</td>
+                            <td class="numeric">{{ "%.2f"|format(player.actual_points_per_90) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
         
-        <!-- Pagination Controls -->
+        <!-- Pagination -->
         <div class="pagination">
             {% if page > 1 %}
-            <a href="/?position={{ selected_position }}&mins={{ mins_threshold }}&games={{ time_period }}&sort={{ sort_by }}&order={{ sort_order }}&page={{ page - 1 }}" class="page-btn">← Previous</a>
+            <a href="/?position={{ selected_position }}&mins={{ mins_threshold }}&games={{ time_period }}&sort={{ sort_by }}&order={{ sort_order }}&team={{ selected_team }}&price_max={{ price_max }}&page={{ page - 1 }}" class="page-btn">← Previous</a>
             {% else %}
             <span class="page-btn disabled">← Previous</span>
             {% endif %}
@@ -690,7 +501,7 @@
             <span class="page-info">Page {{ page }} of {{ position_data.total_pages }}</span>
             
             {% if page < position_data.total_pages %}
-            <a href="/?position={{ selected_position }}&mins={{ mins_threshold }}&games={{ time_period }}&sort={{ sort_by }}&order={{ sort_order }}&page={{ page + 1 }}" class="page-btn">Next →</a>
+            <a href="/?position={{ selected_position }}&mins={{ mins_threshold }}&games={{ time_period }}&sort={{ sort_by }}&order={{ sort_order }}&team={{ selected_team }}&price_max={{ price_max }}&page={{ page + 1 }}" class="page-btn">Next →</a>
             {% else %}
             <span class="page-btn disabled">Next →</span>
             {% endif %}
@@ -698,76 +509,72 @@
     </div>
 
     <script>
-        let changeTimeout;
         const maxGames = {{ max_games }};
-        
-        function changePosition(position) {
-            // Get current mins threshold and games
-            const mins = document.getElementById('mins-slider').value;
-            const games = document.getElementById('games-slider').value;
-            // Always go to page 1 when changing position
-            window.location.href = '/?position=' + position + '&mins=' + mins + '&games=' + games + '&page=1';
+        let changeTimeout;
+
+        // ── helpers ──────────────────────────────────────────────────────────
+
+        function updateLabel(id, text) {
+            document.getElementById(id).textContent = text;
         }
-        
-        function updateMinsValue(value) {
-            // Update the displayed value
-            document.getElementById('mins-value').textContent = value + '%';
-            
-            // Clear existing timeout
+
+        function updateGamesLabel(value) {
+            const suffix = (value == 1) ? ' Game' : ' Games';
+            const all    = (value == maxGames) ? ' (All)' : '';
+            updateLabel('games-value', value + suffix + all);
+        }
+
+        function scheduleApply() {
             clearTimeout(changeTimeout);
-            
-            // Set new timeout to reload page after user stops dragging (500ms delay)
-            changeTimeout = setTimeout(() => {
-                const position = document.getElementById('position-dropdown').value;
-                const games = document.getElementById('games-slider').value;
-                window.location.href = '/?position=' + position + '&mins=' + value + '&games=' + games + '&page=1';
-            }, 500);
+            changeTimeout = setTimeout(applyFilters, 500);
         }
-        
-        function updateGamesValue(value) {
-            // Update the displayed value
-            const gameSuffix = (value == 1) ? ' Game' : ' Games';
-            const allSuffix = (value == maxGames) ? ' (All)' : '';
-            const displayValue = value + gameSuffix + allSuffix;
-            document.getElementById('games-value').textContent = displayValue;
-            
-            // Clear existing timeout
+
+        // ── main navigate ────────────────────────────────────────────────────
+
+        function applyFilters() {
             clearTimeout(changeTimeout);
-            
-            // Set new timeout to reload page after user stops dragging (500ms delay)
-            changeTimeout = setTimeout(() => {
-                const position = document.getElementById('position-dropdown').value;
-                const mins = document.getElementById('mins-slider').value;
-                window.location.href = '/?position=' + position + '&mins=' + mins + '&games=' + value + '&page=1';
-            }, 500);
+            const params = new URLSearchParams({
+                position:  document.getElementById('position-dropdown').value,
+                team:      document.getElementById('team-dropdown').value,
+                mins:      document.getElementById('mins-slider').value,
+                games:     document.getElementById('games-slider').value,
+                price_max: parseFloat(document.getElementById('price-slider').value).toFixed(1),
+                sort:      '{{ sort_by }}',
+                order:     '{{ sort_order }}',
+                page:      1,
+            });
+            window.location.href = '/?' + params.toString();
         }
-        
+
+        // ── column sort ──────────────────────────────────────────────────────
+
         function sortTable(column) {
-            const urlParams = new URLSearchParams(window.location.search);
-            const currentSort = urlParams.get('sort');
-            const currentOrder = urlParams.get('order') || 'desc';
-            
-            const position = document.getElementById('position-dropdown').value;
-            const mins = document.getElementById('mins-slider').value;
-            const games = document.getElementById('games-slider').value;
-            
-            let newSort = column;
+            const currentSort  = '{{ sort_by }}';
+            const currentOrder = '{{ sort_order }}';
+
+            let newSort  = column;
             let newOrder = 'desc';
-            
-            // Three-state toggle: desc -> asc -> default (no sort)
+
             if (currentSort === column) {
                 if (currentOrder === 'desc') {
-                    // Second click: switch to ascending
                     newOrder = 'asc';
                 } else {
-                    // Third click: return to default (expected_points desc)
-                    newSort = 'expected_points';
+                    newSort  = 'expected_points';
                     newOrder = 'desc';
                 }
             }
-            
-            // Always go to page 1 when sorting
-            window.location.href = '/?position=' + position + '&mins=' + mins + '&games=' + games + '&sort=' + newSort + '&order=' + newOrder + '&page=1';
+
+            const params = new URLSearchParams({
+                position:  document.getElementById('position-dropdown').value,
+                team:      document.getElementById('team-dropdown').value,
+                mins:      document.getElementById('mins-slider').value,
+                games:     document.getElementById('games-slider').value,
+                price_max: parseFloat(document.getElementById('price-slider').value).toFixed(1),
+                sort:      newSort,
+                order:     newOrder,
+                page:      1,
+            });
+            window.location.href = '/?' + params.toString();
         }
     </script>
 </body>

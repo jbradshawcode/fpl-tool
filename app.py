@@ -84,13 +84,15 @@ def index():
         # Default to 5 games or max if less than 5 available
         default_games = min(5, max_games)
         
-        # Get position, page, mins_threshold, time_period, and sort from query parameters
-        selected_position = request.args.get('position', 'GKP', type=str)
+        # Get query parameters
+        selected_position = request.args.get('position', '', type=str)
         page = request.args.get('page', 1, type=int)
-        mins_threshold = request.args.get('mins', 70, type=int)  # Default 70%
-        time_period = request.args.get('games', default_games, type=int)  # Default to 5 or max
-        sort_by = request.args.get('sort', 'expected_points', type=str)  # Default sort by xP
-        sort_order = request.args.get('order', 'desc', type=str)  # Default descending
+        mins_threshold = request.args.get('mins', 70, type=int)
+        time_period = request.args.get('games', default_games, type=int)
+        sort_by = request.args.get('sort', 'expected_points', type=str)
+        sort_order = request.args.get('order', 'desc', type=str)
+        selected_team = request.args.get('team', '', type=str)
+        price_max = request.args.get('price_max', None, type=float)
         per_page = 10
         
         position_names = {
@@ -100,39 +102,63 @@ def index():
             "FWD": "Forwards"
         }
         
-        # Get all players for selected position with mins threshold and time period
-        df = calculations.expected_points_per_90(
-            history_df=history_df,
-            players_df=players_df,
-            position=selected_position,
-            mins_threshold=mins_threshold / 100,  # Convert percentage to decimal
-            time_period=time_period if time_period < max_games else None,  # None = all games
-        )
+        # Get all players for selected position (or all positions) with mins threshold and time period
+        if selected_position:
+            df = calculations.expected_points_per_90(
+                history_df=history_df,
+                players_df=players_df,
+                position=selected_position,
+                mins_threshold=mins_threshold / 100,
+                time_period=time_period if time_period < max_games else None,
+            )
+        else:
+            # Combine all positions
+            dfs = []
+            for pos in ["GKP", "DEF", "MID", "FWD"]:
+                dfs.append(calculations.expected_points_per_90(
+                    history_df=history_df,
+                    players_df=players_df,
+                    position=pos,
+                    mins_threshold=mins_threshold / 100,
+                    time_period=time_period if time_period < max_games else None,
+                ))
+            df = pd.concat(dfs, ignore_index=True)
         
         df = format_player_data(df)
-        
-        # Apply user's sorting choice
+
+        # Derive team list and price bounds from the full position dataset (before filtering)
+        # so the controls always reflect the full range for the current position
+        all_teams = sorted(df['team_name'].dropna().unique().tolist()) if 'team_name' in df.columns else []
+        global_price_min = round(float(df['now_cost'].min()), 1) if len(df) > 0 else 4.0
+        global_price_max = round(float(df['now_cost'].max()), 1) if len(df) > 0 else 15.0
+
+        # Default price_max to the position maximum if not provided
+        if price_max is None:
+            price_max = global_price_max
+
+        # Apply price filter
+        df = df[df['now_cost'] <= price_max]
+
+        # Apply team filter
+        if selected_team and 'team_name' in df.columns:
+            df = df[df['team_name'] == selected_team]
+
+        # Apply sorting
         ascending = (sort_order == 'asc')
         df = df.sort_values(by=sort_by, ascending=ascending).reset_index(drop=True)
         
         # Calculate pagination
         total_players = len(df)
-        total_pages = max(1, (total_players + per_page - 1) // per_page)  # Ceiling division, min 1
-        
-        # Ensure page is within valid range
+        total_pages = max(1, (total_players + per_page - 1) // per_page)
         page = max(1, min(page, total_pages))
         
-        # Get players for current page
         start_idx = (page - 1) * per_page
         end_idx = start_idx + per_page
         page_players = df.iloc[start_idx:end_idx].copy()
-        
-        # Add simple 1,2,3,4,5... rank for display (just the row number)
         page_players['rank'] = range(start_idx + 1, start_idx + len(page_players) + 1)
         
-        # Prepare data for template
         position_data = {
-            'name': position_names[selected_position],
+            'name': position_names.get(selected_position, 'All Players'),
             'code': selected_position,
             'players': page_players.to_dict('records'),
             'total_players': total_players,
@@ -152,7 +178,12 @@ def index():
             time_period=time_period,
             max_games=max_games,
             sort_by=sort_by,
-            sort_order=sort_order
+            sort_order=sort_order,
+            all_teams=all_teams,
+            selected_team=selected_team,
+            price_max=price_max,
+            global_price_min=global_price_min,
+            global_price_max=global_price_max,
         )
     
     except Exception as e:
@@ -161,7 +192,6 @@ def index():
 
 
 if __name__ == '__main__':
-    # Open browser only once (not when Flask reloader restarts)
     import os
     if os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
         Timer(1.5, open_browser).start()
