@@ -87,6 +87,7 @@ SUPPORTED_METRICS = [
     "selected_by_percent",
     "starts_per_90",
     "tackles",
+    "team",
     "team_name",
     "total_points",
     "transfers_in",
@@ -122,4 +123,5 @@ SUPPORTED_HISTORY_METRICS = [
     "expected_assists",
     "expected_goal_involvements",
     "expected_goals_conceded",
+    "fixture_difficulty",
 ]

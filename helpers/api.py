@@ -42,6 +42,4 @@ def fetch_data(endpoint: str) -> dict:
     response = requests.get(url, timeout=10)
     response.raise_for_status()
     data = response.json()
-    if not isinstance(data, dict):
-        raise TypeError(f"Expected dict but got {type(data).__name__}")
     return data

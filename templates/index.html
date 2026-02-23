@@ -41,17 +41,91 @@
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
 
+        .selector-row-toggles {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            margin-top: 1rem;
+        }
+
+        .toggle-label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 600;
+            color: #495057;
+            font-size: 0.95rem;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .toggle-label input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: #667eea;
+            cursor: pointer;
+        }
+
+        .pill-toggle {
+            display: flex;
+            align-items: center;
+            width: 72px;
+            height: 32px;
+            border-radius: 999px;
+            background: #667eea;
+            cursor: pointer;
+            padding: 3px;
+            transition: background 0.25s;
+            flex-shrink: 0;
+            user-select: none;
+        }
+
+        .pill-toggle[data-on="false"] {
+            background: #ced4da;
+        }
+
+        .pill-knob {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: white;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+            transition: transform 0.25s;
+            flex-shrink: 0;
+        }
+
+        .pill-toggle[data-on="true"] .pill-knob {
+            transform: translateX(40px);
+        }
+
+        .pill-label {
+            position: absolute;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: white;
+            pointer-events: none;
+            margin-left: 8px;
+            transition: opacity 0.2s;
+        }
+
+        .pill-toggle[data-on="false"] .pill-label {
+            margin-left: 30px;
+            color: #6c757d;
+        }
+
         .selector-row-dropdowns {
             display: flex;
             align-items: center;
             gap: 1.5rem;
             margin-bottom: 1rem;
+            flex-wrap: nowrap;
         }
 
         .selector-row-sliders {
             display: flex;
             align-items: center;
             gap: 2rem;
+            flex-wrap: nowrap;
         }
 
         .selector-item {
@@ -59,7 +133,12 @@
             align-items: center;
             gap: 0.75rem;
             flex: 1 1 0;
-            min-width: 220px;
+            min-width: 0;
+        }
+
+        .selector-item.selector-item--pill {
+            flex: 0 0 auto;
+            min-width: 0;
         }
 
         .position-selector label {
@@ -78,7 +157,6 @@
             color: #495057;
             cursor: pointer;
             transition: all 0.2s;
-            min-width: 150px;
             flex: 1;
         }
 
@@ -358,7 +436,7 @@
         <!-- Filters -->
         <div class="position-selector">
 
-            <!-- Row 1: Dropdowns (left-aligned) -->
+            <!-- Row 1: Dropdowns + Toggle (left-aligned) -->
             <div class="selector-row-dropdowns">
 
                 <div class="selector-item">
@@ -381,6 +459,14 @@
                         <option value="{{ team }}" {% if team == selected_team %}selected{% endif %}>{{ team }}</option>
                         {% endfor %}
                     </select>
+                </div>
+
+                <div class="selector-item selector-item--pill">
+                    <label for="adjust-difficulty-toggle">Adjust for Fixture Difficulty:</label>
+                    <div class="pill-toggle" id="adjust-difficulty-toggle" onclick="toggleFutureWindow(this)" data-on="true">
+                        <div class="pill-knob"></div>
+                        <span class="pill-label">On</span>
+                    </div>
                 </div>
 
             </div>
@@ -427,6 +513,20 @@
                             oninput="updateLabel('price-value', '£' + parseFloat(this.value).toFixed(1) + 'm'); scheduleApply()"
                         >
                         <span class="slider-value" id="price-value">£{{ "%.1f"|format(price_max) }}m</span>
+                    </div>
+                </div>
+
+                <div class="selector-item" id="future-window-item" style="display: flex;">
+                    <label for="future-slider">Future Window:</label>
+                    <div class="slider-container">
+                        <input
+                            type="range"
+                            id="future-slider"
+                            min="1" max="{{ max_games }}" step="1"
+                            value="5"
+                            oninput="updateLabel('future-value', this.value + (this.value == 1 ? ' Game' : ' Games'))"
+                        >
+                        <span class="slider-value" id="future-value">5 Games</span>
                     </div>
                 </div>
 
@@ -511,6 +611,14 @@
     <script>
         const maxGames = {{ max_games }};
         let changeTimeout;
+
+        function toggleFutureWindow(pill) {
+            const isOn = pill.getAttribute('data-on') === 'true';
+            const nowOn = !isOn;
+            pill.setAttribute('data-on', nowOn);
+            pill.querySelector('.pill-label').textContent = nowOn ? 'On' : 'Off';
+            document.getElementById('future-window-item').style.display = nowOn ? 'flex' : 'none';
+        }
 
         // ── helpers ──────────────────────────────────────────────────────────
 
