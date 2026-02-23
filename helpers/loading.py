@@ -114,12 +114,11 @@ def _merge_fixture_difficulty(
         how="left",
     ).drop(columns=["_team_id", "team_id"])
 
-    # In double gameweeks a team appears twice in the same round — average the
-    # difficulty across those fixtures so we get one row per (element, round)
-    history_df["fixture_difficulty"] = history_df.groupby(
-        ["element", "round"]
-    )["fixture_difficulty"].transform("mean")
-    history_df = history_df.drop_duplicates(subset=["element", "round"]).reset_index(drop=True)
+    # Deduplicate on the natural fixture key — keeps each actual fixture once
+    # (handles merge fan-out) without collapsing double gameweek rows
+    history_df = history_df.drop_duplicates(
+        subset=["element", "round", "opponent_team_name"]
+    ).reset_index(drop=True)
 
     return history_df
 

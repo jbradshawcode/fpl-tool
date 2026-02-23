@@ -32,7 +32,11 @@ def build_difficulty_lookup(history_df: pd.DataFrame) -> tuple[np.ndarray, np.nd
 
     """
     rdf = (
-        history_df.groupby("fixture_difficulty")["expected_goal_involvements"]
+        history_df.assign(
+            expected_goal_involvements=pd.to_numeric(history_df["expected_goal_involvements"], errors="coerce"),
+            fixture_difficulty=pd.to_numeric(history_df["fixture_difficulty"], errors="coerce"),
+        )
+        .groupby("fixture_difficulty")["expected_goal_involvements"]
         .mean()
         .reset_index()
     )
@@ -42,12 +46,64 @@ def build_difficulty_lookup(history_df: pd.DataFrame) -> tuple[np.ndarray, np.nd
     return rdf["fixture_difficulty"].values, rdf["expected_goal_involvements"].values
 
 
+def compute_horizon_factor(
+    players_df: pd.DataFrame,
+    fdr_df: pd.DataFrame,
+    current_round: int,
+    horizon: int,
+    xp: np.ndarray,
+    yp: np.ndarray,
+) -> pd.Series:
+    """Compute average difficulty factor for each player's upcoming fixtures.
+
+    Parameters
+    ----------
+    players_df : pd.DataFrame
+        Player metadata; index is element id, must contain 'team' column.
+    fdr_df : pd.DataFrame
+        Full fixture difficulty map (all rounds, both teams).
+    current_round : int
+        The most recently completed round.
+    horizon : int
+        Number of upcoming rounds to look ahead.
+    xp, yp : np.ndarray
+        Difficulty interpolation arrays from build_difficulty_lookup.
+
+    Returns
+    -------
+    pd.Series
+        Index = element id, values = horizon difficulty factor.
+
+    """
+    upcoming_rounds = list(range(current_round + 1, current_round + horizon + 1))
+    upcoming = fdr_df[fdr_df["round"].isin(upcoming_rounds)]
+
+    # Average difficulty per team over the horizon
+    team_avg = (
+        upcoming.groupby("team_id")["fixture_difficulty"]
+        .mean()
+        .rename("avg_horizon_difficulty")
+    )
+
+    # Map element → team → avg difficulty → factor
+    element_team = players_df["team"]
+    element_avg = element_team.map(team_avg)
+    horizon_factor = pd.Series(
+        np.interp(element_avg.values, xp, yp),
+        index=element_avg.index,
+        name="horizon_factor",
+    )
+    return horizon_factor
+
+
 def expected_points_per_90(
     history_df: pd.DataFrame,
     players_df: pd.DataFrame,
     position: Optional[str] = None,
     mins_threshold: float = None,
     time_period: Optional[int] = None,
+    fdr_df: Optional[pd.DataFrame] = None,
+    horizon: Optional[int] = None,
 ) -> pd.DataFrame:
     """Compute expected and actual points per 90 minutes for players.
 
@@ -63,12 +119,18 @@ def expected_points_per_90(
         Minimum average minutes over the period required for inclusion.
     time_period : int or None, optional
         Number of most recent rounds to consider. If None, uses all rounds.
+    fdr_df : pd.DataFrame or None, optional
+        Full fixture difficulty map. Required if horizon is set.
+    horizon : int or None, optional
+        Number of upcoming rounds to use for forward difficulty scaling.
+        If provided alongside fdr_df, xP and xP/90 are scaled by
+        (horizon_factor / recency_factor).
 
     Returns
     -------
     pd.DataFrame
-        Ranked table (descending by expected points) with player metadata
-        merged in, including avg_fixture_difficulty and difficulty_factor.
+        Ranked table with player metadata merged in. If horizon scaling is
+        active, includes adjusted_expected_points and adjusted_expected_points_per_90.
 
     """
     # Build the difficulty lookup from the full history (not time-filtered)
@@ -78,9 +140,11 @@ def expected_points_per_90(
 
     # Filter by recent rounds if time_period is specified
     if time_period is not None:
-        latest_round = history_df["round"].max()
+        latest_round = int(history_df["round"].max())
         recent_rounds = list(range(latest_round - time_period + 1, latest_round + 1))
         df = df[df["round"].isin(recent_rounds)]
+    else:
+        latest_round = int(history_df["round"].max())
 
     # Filter by position if specified
     if position is not None:
@@ -106,27 +170,34 @@ def expected_points_per_90(
         avg_fixture_difficulty=("avg_fixture_difficulty", "mean"),
     )
 
-    # Calculate per-90 metrics
+    # Build scale: horizon_factor / recency_factor (1.0 if adjustment off)
+    grouped["recency_factor"] = np.interp(grouped["avg_fixture_difficulty"], xp, yp)
+
+    if fdr_df is not None and horizon is not None:
+        horizon_factor = compute_horizon_factor(
+            players_df, fdr_df, latest_round, horizon, xp, yp
+        )
+        grouped["horizon_factor"] = horizon_factor.reindex(grouped.index)
+        scale = (grouped["horizon_factor"] / grouped["recency_factor"]).fillna(1.0)
+    else:
+        grouped["horizon_factor"] = np.nan
+        scale = 1.0
+
+    # Calculate per-90 metrics, applying scale directly to xP
     grouped["expected_points_per_90"] = (
         grouped["total_expected_points"] / grouped["total_minutes"]
-    ) * 90
+    ) * 90 * scale
     grouped["actual_points_per_90"] = (
         grouped["total_actual_points"] / grouped["total_minutes"]
     ) * 90
+    # Count fixtures per player (each row in df is one fixture)
+    fixtures_per_player = df.groupby("element").size().rename("fixture_count")
+    grouped["fixture_count"] = fixtures_per_player.reindex(grouped.index)
     grouped["percentage_of_mins_played"] = grouped["total_minutes"] / (
-        len(df["round"].unique()) * 90
+        grouped["fixture_count"] * 90
     )
-    grouped["actual_points"] = (
-        grouped["actual_points_per_90"] * grouped["percentage_of_mins_played"]
-    )
-    grouped["expected_points"] = (
-        grouped["expected_points_per_90"] * grouped["percentage_of_mins_played"]
-    )
-
-    # Vectorised difficulty factor using linear interpolation
-    grouped["difficulty_factor"] = np.interp(
-        grouped["avg_fixture_difficulty"], xp, yp
-    )
+    grouped["actual_points"] = grouped["total_actual_points"] / grouped["fixture_count"]
+    grouped["expected_points"] = grouped["expected_points_per_90"] * grouped["percentage_of_mins_played"]
 
     # Apply minutes filter
     if mins_threshold is not None:

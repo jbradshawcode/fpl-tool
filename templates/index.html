@@ -491,9 +491,9 @@
 
                 <div class="selector-item selector-item--pill">
                     <label for="adjust-difficulty-toggle">Adjust for Fixture Difficulty:</label>
-                    <div class="pill-toggle" id="adjust-difficulty-toggle" onclick="toggleFutureWindow(this)" data-on="true">
+                    <div class="pill-toggle" id="adjust-difficulty-toggle" onclick="toggleFutureWindow(this)" data-on="{{ 'true' if adjust_difficulty else 'false' }}">
                         <div class="pill-knob"></div>
-                        <span class="pill-label">On</span>
+                        <span class="pill-label">{{ 'On' if adjust_difficulty else 'Off' }}</span>
                     </div>
                 </div>
 
@@ -544,17 +544,17 @@
                     </div>
                 </div>
 
-                <div class="selector-item" id="future-window-item" style="display: flex;">
+                <div class="selector-item" id="future-window-item" style="display: {{ 'flex' if adjust_difficulty else 'none' }};">
                     <label for="future-slider">Horizon:</label>
                     <div class="slider-container">
                         <input
                             type="range"
                             id="future-slider"
                             min="1" max="{{ max_games }}" step="1"
-                            value="5"
-                            oninput="updateLabel('future-value', this.value + (this.value == 1 ? ' Game' : ' Games'))"
+                            value="{{ horizon }}"
+                            oninput="updateLabel('future-value', this.value + (this.value == 1 ? ' Game' : ' Games')); scheduleApply()"
                         >
-                        <span class="slider-value" id="future-value">5 Games</span>
+                        <span class="slider-value" id="future-value">{{ horizon }} {{ 'Game' if horizon == 1 else 'Games' }}</span>
                     </div>
                 </div>
 
@@ -648,6 +648,7 @@
             pill.setAttribute('data-on', nowOn);
             pill.querySelector('.pill-label').textContent = nowOn ? 'On' : 'Off';
             document.getElementById('future-window-item').style.display = nowOn ? 'flex' : 'none';
+            applyFilters();
         }
 
         // ── helpers ──────────────────────────────────────────────────────────
@@ -675,15 +676,18 @@
             clearTimeout(changeTimeout);
             const currentPosition = document.getElementById('position-dropdown').value;
             const positionChanged = currentPosition !== lastPosition;
+            const adjustOn = document.getElementById('adjust-difficulty-toggle').getAttribute('data-on') === 'true';
 
             const params = new URLSearchParams({
-                position:  currentPosition,
-                team:      document.getElementById('team-dropdown').value,
-                mins:      document.getElementById('mins-slider').value,
-                games:     document.getElementById('games-slider').value,
-                sort:      '{{ sort_by }}',
-                order:     '{{ sort_order }}',
-                page:      1,
+                position:          currentPosition,
+                team:              document.getElementById('team-dropdown').value,
+                mins:              document.getElementById('mins-slider').value,
+                games:             document.getElementById('games-slider').value,
+                adjust_difficulty: adjustOn,
+                horizon:           document.getElementById('future-slider').value,
+                sort:              '{{ sort_by }}',
+                order:             '{{ sort_order }}',
+                page:              1,
             });
 
             // Only carry price_max if position hasn't changed — otherwise let
@@ -700,6 +704,7 @@
         function sortTable(column) {
             const currentSort  = '{{ sort_by }}';
             const currentOrder = '{{ sort_order }}';
+            const adjustOn = document.getElementById('adjust-difficulty-toggle').getAttribute('data-on') === 'true';
 
             let newSort  = column;
             let newOrder = 'desc';
@@ -714,14 +719,16 @@
             }
 
             const params = new URLSearchParams({
-                position:  document.getElementById('position-dropdown').value,
-                team:      document.getElementById('team-dropdown').value,
-                mins:      document.getElementById('mins-slider').value,
-                games:     document.getElementById('games-slider').value,
-                price_max: parseFloat(document.getElementById('price-slider').value).toFixed(1),
-                sort:      newSort,
-                order:     newOrder,
-                page:      1,
+                position:          document.getElementById('position-dropdown').value,
+                team:              document.getElementById('team-dropdown').value,
+                mins:              document.getElementById('mins-slider').value,
+                games:             document.getElementById('games-slider').value,
+                price_max:         parseFloat(document.getElementById('price-slider').value).toFixed(1),
+                adjust_difficulty: adjustOn,
+                horizon:           document.getElementById('future-slider').value,
+                sort:              newSort,
+                order:             newOrder,
+                page:              1,
             });
             window.location.href = '/?' + params.toString();
         }

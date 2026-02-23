@@ -98,6 +98,8 @@ def index():
         sort_order = request.args.get('order', 'desc', type=str)
         selected_team = request.args.get('team', '', type=str)
         price_max = request.args.get('price_max', None, type=float)
+        adjust_difficulty = request.args.get('adjust_difficulty', 'true', type=str) == 'true'
+        horizon = request.args.get('horizon', 5, type=int)
         per_page = 10
         
         position_names = {
@@ -106,6 +108,9 @@ def index():
             "MID": "Midfielders",
             "FWD": "Forwards"
         }
+
+        fdr_arg = fdr_df if adjust_difficulty else None
+        horizon_arg = horizon if adjust_difficulty else None
         
         # Get all players for selected position (or all positions) with mins threshold and time period
         if selected_position:
@@ -115,6 +120,8 @@ def index():
                 position=selected_position,
                 mins_threshold=mins_threshold / 100,
                 time_period=time_period if time_period < max_games else None,
+                fdr_df=fdr_arg,
+                horizon=horizon_arg,
             )
         else:
             # Combine all positions
@@ -126,9 +133,11 @@ def index():
                     position=pos,
                     mins_threshold=mins_threshold / 100,
                     time_period=time_period if time_period < max_games else None,
+                    fdr_df=fdr_arg,
+                    horizon=horizon_arg,
                 ))
             df = pd.concat(dfs, ignore_index=True)
-        
+
         df = format_player_data(df)
 
         # Derive team list and price bounds from the full position dataset (before filtering)
@@ -189,6 +198,8 @@ def index():
             price_max=price_max,
             global_price_min=global_price_min,
             global_price_max=global_price_max,
+            adjust_difficulty=adjust_difficulty,
+            horizon=horizon,
         )
     
     except Exception as e:
