@@ -489,20 +489,6 @@
                 </div>
 
                 <div class="selector-item">
-                    <label for="games-slider">Recency:</label>
-                    <div class="slider-container">
-                        <input 
-                            type="range" 
-                            id="games-slider" 
-                            min="1" max="{{ max_games }}" step="1" 
-                            value="{{ time_period }}"
-                            oninput="updateGamesLabel(this.value); scheduleApply()"
-                        >
-                        <span class="slider-value" id="games-value">{{ time_period }}{% if time_period == 1 %} Game{% else %} Games{% endif %}{% if time_period == max_games %} (All){% endif %}</span>
-                    </div>
-                </div>
-
-                <div class="selector-item">
                     <label for="price-slider">Max Price:</label>
                     <div class="slider-container">
                         <input 
@@ -513,6 +499,20 @@
                             oninput="updateLabel('price-value', '£' + parseFloat(this.value).toFixed(1) + 'm'); scheduleApply()"
                         >
                         <span class="slider-value" id="price-value">£{{ "%.1f"|format(price_max) }}m</span>
+                    </div>
+                </div>
+
+                <div class="selector-item">
+                    <label for="games-slider">Recency:</label>
+                    <div class="slider-container">
+                        <input 
+                            type="range" 
+                            id="games-slider" 
+                            min="1" max="{{ max_games }}" step="1" 
+                            value="{{ time_period }}"
+                            oninput="updateGamesLabel(this.value); scheduleApply()"
+                        >
+                        <span class="slider-value" id="games-value">{{ time_period }}{% if time_period == 1 %} Game{% else %} Games{% endif %}{% if time_period == max_games %} (All){% endif %}</span>
                     </div>
                 </div>
 
