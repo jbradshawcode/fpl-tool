@@ -86,12 +86,20 @@ def expected_points_per_90(
     if position is not None:
         df = df[df["pos_abbr"] == position]
 
-    # Group by player and aggregate
-    grouped = df.groupby("element").agg(
+    # Group by player and fixture (opponent disambiguates double gameweeks)
+    grouped = df.groupby(["element", "round", "opponent_team_name"]).agg(
         total_minutes=("minutes", "sum"),
         total_expected_points=("expected_points", "sum"),
         total_actual_points=("total_points", "sum"),
         avg_fixture_difficulty=("fixture_difficulty", "mean"),
+    )
+
+    # Collapse back to element level
+    grouped = grouped.groupby("element").agg(
+        total_minutes=("total_minutes", "sum"),
+        total_expected_points=("total_expected_points", "sum"),
+        total_actual_points=("total_actual_points", "sum"),
+        avg_fixture_difficulty=("avg_fixture_difficulty", "mean"),
     )
 
     # Calculate per-90 metrics
