@@ -550,7 +550,7 @@
                         <input
                             type="range"
                             id="future-slider"
-                            min="1" max="{{ max_games }}" step="1"
+                            min="1" max="{{ remaining_games }}" step="1"
                             value="{{ horizon }}"
                             oninput="updateLabel('future-value', this.value + (this.value == 1 ? ' Game' : ' Games')); scheduleApply()"
                         >

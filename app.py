@@ -85,6 +85,8 @@ def index():
         
         # Calculate max games available
         max_games = int(history_df['round'].max()) if len(history_df) > 0 else 38
+        total_rounds = 38
+        remaining_games = total_rounds - max_games
         
         # Default to 5 games or max if less than 5 available
         default_games = min(5, max_games)
@@ -99,7 +101,7 @@ def index():
         selected_team = request.args.get('team', '', type=str)
         price_max = request.args.get('price_max', None, type=float)
         adjust_difficulty = request.args.get('adjust_difficulty', 'true', type=str) == 'true'
-        horizon = request.args.get('horizon', 5, type=int)
+        horizon = min(request.args.get('horizon', 5, type=int), remaining_games)
         per_page = 10
         
         position_names = {
@@ -191,6 +193,7 @@ def index():
             mins_threshold=mins_threshold,
             time_period=time_period,
             max_games=max_games,
+            remaining_games=remaining_games,
             sort_by=sort_by,
             sort_order=sort_order,
             all_teams=all_teams,
