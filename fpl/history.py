@@ -36,24 +36,25 @@ def fetch_player_history(element_id: int, team_map: dict[int, str]) -> pd.DataFr
 
     """
     data = fetch_data(f"element-summary/{element_id}/")
-    
+
     # Check if data exists and history is not empty
     if not data or "history" not in data or not data["history"]:
         return pd.DataFrame()
-    
+
     df = pd.DataFrame(data["history"])
-    
+
     # Only map opponent_team if the column exists
     if "opponent_team" in df.columns:
         df["opponent_team_name"] = df["opponent_team"].map(team_map)
-    
+
     # Only select supported metrics that exist in the DataFrame
     available_metrics = [col for col in SUPPORTED_HISTORY_METRICS if col in df.columns]
-    
+
     if not available_metrics:
         return pd.DataFrame()
-    
+
     return df[available_metrics]
+
 
 def fetch_all_histories(
     player_ids: list[int],

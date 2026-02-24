@@ -64,20 +64,24 @@ def _build_fixture_difficulty_map(fixtures: list[dict]) -> pd.DataFrame:
         event = f.get("event")
         if event is None:
             continue  # skip unscheduled fixtures
-        rows.append({
-            "round": event,
-            "team_id": f["team_h"],
-            "opponent_id": f["team_a"],
-            "fixture_difficulty": f["team_h_difficulty"],
-            "was_home": True,
-        })
-        rows.append({
-            "round": event,
-            "team_id": f["team_a"],
-            "opponent_id": f["team_h"],
-            "fixture_difficulty": f["team_a_difficulty"],
-            "was_home": False,
-        })
+        rows.append(
+            {
+                "round": event,
+                "team_id": f["team_h"],
+                "opponent_id": f["team_a"],
+                "fixture_difficulty": f["team_h_difficulty"],
+                "was_home": True,
+            }
+        )
+        rows.append(
+            {
+                "round": event,
+                "team_id": f["team_a"],
+                "opponent_id": f["team_h"],
+                "fixture_difficulty": f["team_a_difficulty"],
+                "was_home": False,
+            }
+        )
     return pd.DataFrame(rows)
 
 
@@ -155,7 +159,7 @@ def retrieve_data(endpoint: str) -> dict:
 
 def save_data(data: dict) -> None:
     """Save player, history, fdr, and scoring data to local files."""
-    required_keys = ['players_df', 'history_df', 'fdr_df', 'scoring']
+    required_keys = ["players_df", "history_df", "fdr_df", "scoring"]
     missing_keys = [key for key in required_keys if key not in data]
     if missing_keys:
         raise ValueError(f"Missing required keys in data dict: {missing_keys}")
@@ -164,7 +168,9 @@ def save_data(data: dict) -> None:
     data_dir.mkdir(parents=True, exist_ok=True)
 
     try:
-        data["players_df"].to_csv(data_dir / "players_data.csv", index=True, index_label='id')
+        data["players_df"].to_csv(
+            data_dir / "players_data.csv", index=True, index_label="id"
+        )
         data["history_df"].to_csv(data_dir / "player_histories.csv", index=False)
         data["fdr_df"].to_csv(data_dir / "fixture_difficulty_ratings.csv", index=False)
 

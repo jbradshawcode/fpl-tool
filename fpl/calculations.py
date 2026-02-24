@@ -33,8 +33,12 @@ def build_difficulty_lookup(history_df: pd.DataFrame) -> tuple[np.ndarray, np.nd
     """
     rdf = (
         history_df.assign(
-            expected_goal_involvements=pd.to_numeric(history_df["expected_goal_involvements"], errors="coerce"),
-            fixture_difficulty=pd.to_numeric(history_df["fixture_difficulty"], errors="coerce"),
+            expected_goal_involvements=pd.to_numeric(
+                history_df["expected_goal_involvements"], errors="coerce"
+            ),
+            fixture_difficulty=pd.to_numeric(
+                history_df["fixture_difficulty"], errors="coerce"
+            ),
         )
         .groupby("fixture_difficulty")["expected_goal_involvements"]
         .mean()
@@ -171,7 +175,9 @@ def expected_points_per_90(
     )
 
     # Build scale: horizon_factor / recency_factor (1.0 if adjustment off)
-    grouped["avg_fixture_difficulty"] = grouped["avg_fixture_difficulty"].fillna(3.0)  # neutral if unknown
+    grouped["avg_fixture_difficulty"] = grouped["avg_fixture_difficulty"].fillna(
+        3.0
+    )  # neutral if unknown
     grouped["recency_factor"] = np.interp(grouped["avg_fixture_difficulty"], xp, yp)
 
     if fdr_df is not None and horizon is not None:
@@ -179,7 +185,11 @@ def expected_points_per_90(
             players_df, fdr_df, latest_round, horizon, xp, yp
         )
         grouped["horizon_factor"] = horizon_factor.reindex(grouped.index).fillna(1.0)
-        scale = (grouped["horizon_factor"] / grouped["recency_factor"]).fillna(1.0).replace([np.inf, -np.inf], 1.0)
+        scale = (
+            (grouped["horizon_factor"] / grouped["recency_factor"])
+            .fillna(1.0)
+            .replace([np.inf, -np.inf], 1.0)
+        )
     else:
         grouped["horizon_factor"] = np.nan
         scale = 1.0
