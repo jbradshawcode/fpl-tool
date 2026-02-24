@@ -34,3 +34,6 @@ Thumbs.db
 # Lock files (keep uv.lock but ignore others)
 *.lock
 !uv.lock
+
+# Notes
+IDEAS.md
