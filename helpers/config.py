@@ -12,30 +12,6 @@ BASE_URL = "https://fantasy.premierleague.com/api/"
 # Bootstrap Static Endpoint
 BOOTSTRAP_STATIC_ENDPOINT = "bootstrap-static/"
 
-# Display Columns
-DISPLAY_COLS = [
-    "web_name",
-    "expected_points",
-    "actual_points",
-    "expected_points_per_90",
-    "actual_points_per_90",
-    "percentage_of_mins_played",
-    "now_cost",
-    "team_name",
-]
-
-# Display Mapping
-DISPLAY_MAPPING = {
-    "web_name": "Player",
-    "expected_points": "xPoints",
-    "actual_points": "Points",
-    "expected_points_per_90": "xPoints\n/90",
-    "actual_points_per_90": "Points\n/90",
-    "percentage_of_mins_played": "% of Mins\nPlayed",
-    "now_cost": "Cost",
-    "team_name": "Team",
-}
-
 # Positions Mapping
 POS_MAP = {
     "Goalkeeper": "GKP",
@@ -43,14 +19,6 @@ POS_MAP = {
     "Midfielder": "MID",
     "Forward": "FWD",
 }
-
-# Columns for player profiles
-PROFILE_COLS = [
-    "web_name",
-    "team_name",
-    "position",
-    "now_cost",
-]
 
 # Supported metrics for ranking/analysis
 SUPPORTED_METRICS = [

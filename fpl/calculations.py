@@ -4,9 +4,6 @@ import numpy as np
 from copy import deepcopy
 from typing import Optional
 
-from tabulate import tabulate
-
-from helpers.config import DISPLAY_COLS, DISPLAY_MAPPING
 from helpers.logger import get_logger
 
 
@@ -230,18 +227,3 @@ def expected_points_per_90(
     merged.index = merged.index + 1
 
     return merged
-
-
-def display_df(df: pd.DataFrame) -> None:
-    """Format and print a DataFrame of player metrics in a readable table."""
-    df["actual_points"] = (df["actual_points"]).round(2)
-    df["expected_points"] = (df["expected_points"]).round(2)
-    df["actual_points_per_90"] = df["actual_points_per_90"].round(2)
-    df["expected_points_per_90"] = df["expected_points_per_90"].round(2)
-    df["now_cost"] = df["now_cost"] / 10
-    df["percentage_of_mins_played"] = (df["percentage_of_mins_played"] * 100).map(
-        "{:.2f}%".format,
-    )
-
-    output_df = df[DISPLAY_COLS].rename(columns=DISPLAY_MAPPING)
-    logger.info("\n%s", tabulate(output_df, headers="keys", tablefmt="psql"))
