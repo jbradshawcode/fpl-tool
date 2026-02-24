@@ -1,0 +1,28 @@
+[project]
+name = "fpl-tool"
+version = "0.1.0"
+description = "Flask web application for Fantasy Premier League expected points analysis"
+authors = [{name = "Your Name"}]
+requires-python = ">=3.9"
+dependencies = [
+    "flask>=2.3.0",
+    "pandas>=2.0.0", 
+    "numpy>=1.24.0",
+    "requests>=2.31.0",
+    "tqdm>=4.65.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "black>=23.0.0", 
+    "ruff>=0.1.0",
+]
+
+[tool.ruff]
+line-length = 88
+target-version = "py39"
+
+[tool.black]
+line-length = 88
+target-version = ['py39']
