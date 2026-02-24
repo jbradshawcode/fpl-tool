@@ -1,0 +1,113 @@
+{# templates/_filters.html
+   Context variables required:
+     all_positions, selected_position, all_teams, selected_team,
+     adjust_difficulty, mins_threshold, global_price_min, global_price_max,
+     price_max, time_period, max_games, horizon, remaining_games
+#}
+<div class="position-selector">
+
+    <!-- Row 1: Dropdowns + Toggle -->
+    <div class="selector-row-dropdowns">
+
+        <div class="selector-item">
+            <label for="position-dropdown">Position:</label>
+            <select id="position-dropdown" class="filter-select" onchange="applyFilters()">
+                <option value="" {% if selected_position == '' %}selected{% endif %}>All Positions</option>
+                {% for pos_code, pos_name in all_positions.items() %}
+                <option value="{{ pos_code }}" {% if pos_code == selected_position %}selected{% endif %}>
+                    {{ pos_name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="selector-item">
+            <label for="team-dropdown">Team:</label>
+            <select id="team-dropdown" class="filter-select" onchange="applyFilters()">
+                <option value="">All Teams</option>
+                {% for team in all_teams %}
+                <option value="{{ team }}" {% if team == selected_team %}selected{% endif %}>{{ team }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="selector-item selector-item--pill">
+            <label for="adjust-difficulty-toggle">Adjust for Fixture Difficulty:</label>
+            <div class="pill-toggle"
+                 id="adjust-difficulty-toggle"
+                 onclick="toggleFutureWindow(this)"
+                 data-on="{{ 'true' if adjust_difficulty else 'false' }}">
+                <div class="pill-knob"></div>
+                <span class="pill-label">{{ 'On' if adjust_difficulty else 'Off' }}</span>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Row 2: Sliders -->
+    <div class="selector-row-sliders is-expanded">
+
+        <div class="selector-item">
+            <label for="mins-slider">Mins Played:</label>
+            <div class="slider-container">
+                <input
+                    type="range"
+                    id="mins-slider"
+                    min="0" max="100" step="1"
+                    value="{{ mins_threshold }}"
+                    oninput="updateLabel('mins-value', this.value + '%'); scheduleApply()"
+                >
+                <span class="slider-value" id="mins-value">{{ mins_threshold }}%</span>
+            </div>
+        </div>
+
+        <div class="selector-item">
+            <label for="price-slider">Max Price:</label>
+            <div class="slider-container">
+                <input
+                    type="range"
+                    id="price-slider"
+                    min="{{ global_price_min }}" max="{{ global_price_max }}" step="0.1"
+                    value="{{ price_max }}"
+                    oninput="updateLabel('price-value', '£' + parseFloat(this.value).toFixed(1) + 'm'); scheduleApply()"
+                >
+                <span class="slider-value" id="price-value">£{{ "%.1f"|format(price_max) }}m</span>
+            </div>
+        </div>
+
+        <div class="selector-item">
+            <label for="games-slider">Recency:</label>
+            <div class="slider-container">
+                <input
+                    type="range"
+                    id="games-slider"
+                    min="1" max="{{ max_games }}" step="1"
+                    value="{{ time_period }}"
+                    oninput="updateGamesLabel(this.value); scheduleApply()"
+                >
+                <span class="slider-value" id="games-value">
+                    {{ time_period }}{% if time_period == 1 %} Game{% else %} Games{% endif %}{% if time_period == max_games %} (All){% endif %}
+                </span>
+            </div>
+        </div>
+
+        <div class="selector-item" id="future-window-item"
+             style="display: {{ 'flex' if adjust_difficulty else 'none' }};">
+            <label for="future-slider">Horizon:</label>
+            <div class="slider-container">
+                <input
+                    type="range"
+                    id="future-slider"
+                    min="1" max="{{ remaining_games }}" step="1"
+                    value="{{ horizon }}"
+                    oninput="updateLabel('future-value', this.value + (this.value == 1 ? ' Game' : ' Games')); scheduleApply()"
+                >
+                <span class="slider-value" id="future-value">
+                    {{ horizon }} {{ 'Game' if horizon == 1 else 'Games' }}
+                </span>
+            </div>
+        </div>
+
+    </div>
+
+</div>

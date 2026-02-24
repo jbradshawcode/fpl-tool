@@ -1,0 +1,58 @@
+{# templates/_table.html
+   Context variables required:
+     position_data  — object with: name, start_rank, end_rank, total_players, players
+     sort_by, sort_order
+#}
+<div class="position-section">
+    <div class="section-header">
+        <h2 class="position-title">{{ position_data.name }}</h2>
+        <p class="player-count">
+            Showing {{ position_data.start_rank }}–{{ position_data.end_rank }}
+            of {{ position_data.total_players }} players
+        </p>
+    </div>
+
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>Rank</th>
+                    {% set cols = [
+                        ('web_name',                  'Player',  false),
+                        ('team_name',                 'Team',    false),
+                        ('now_cost',                  'Cost',    true),
+                        ('percentage_of_mins_played', 'Mins %',  true),
+                        ('expected_points',           'xP',      true),
+                        ('actual_points',             'AP',      true),
+                        ('expected_points_per_90',    'xP/90',   true),
+                        ('actual_points_per_90',      'AP/90',   true),
+                    ] %}
+                    {% for col_key, col_label, is_numeric in cols %}
+                    <th class="{{ 'numeric ' if is_numeric }}sortable"
+                        onclick="sortTable('{{ col_key }}')">
+                        {{ col_label }}
+                        {% if sort_by == col_key %}
+                        <span class="sort-arrow">{{ '▼' if sort_order == 'desc' else '▲' }}</span>
+                        {% endif %}
+                    </th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for player in position_data.players %}
+                <tr>
+                    <td class="rank">{{ player.rank|int }}</td>
+                    <td class="player-name">{{ player.web_name }}</td>
+                    <td class="team-name">{{ player.team_name }}</td>
+                    <td class="numeric">£{{ "%.1f"|format(player.now_cost) }}m</td>
+                    <td class="numeric">{{ "%.2f"|format(player.percentage_of_mins_played) }}%</td>
+                    <td class="numeric">{{ "%.2f"|format(player.expected_points) }}</td>
+                    <td class="numeric">{{ "%.2f"|format(player.actual_points) }}</td>
+                    <td class="numeric">{{ "%.2f"|format(player.expected_points_per_90) }}</td>
+                    <td class="numeric">{{ "%.2f"|format(player.actual_points_per_90) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>

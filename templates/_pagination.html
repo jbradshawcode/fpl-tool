@@ -1,0 +1,25 @@
+{# templates/_pagination.html
+   Context variables required:
+     page, position_data (total_pages),
+     selected_position, selected_team, mins_threshold, time_period,
+     sort_by, sort_order, price_max, adjust_difficulty, horizon
+#}
+{% set base_qs %}position={{ selected_position }}&mins={{ mins_threshold }}&games={{ time_period }}&sort={{ sort_by }}&order={{ sort_order }}&team={{ selected_team }}&price_max={{ price_max }}&adjust_difficulty={{ adjust_difficulty|lower }}&horizon={{ horizon }}{% endset %}
+
+<div class="pagination">
+
+    {% if page > 1 %}
+    <a href="/?{{ base_qs }}&page={{ page - 1 }}" class="page-btn">← Previous</a>
+    {% else %}
+    <span class="page-btn disabled">← Previous</span>
+    {% endif %}
+
+    <span class="page-info">Page {{ page }} of {{ position_data.total_pages }}</span>
+
+    {% if page < position_data.total_pages %}
+    <a href="/?{{ base_qs }}&page={{ page + 1 }}" class="page-btn">Next →</a>
+    {% else %}
+    <span class="page-btn disabled">Next →</span>
+    {% endif %}
+
+</div>
