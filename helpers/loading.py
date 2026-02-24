@@ -9,7 +9,7 @@ This module provides functions to:
 
 import json
 import logging
-from pathlib import Path
+import os
 
 import pandas as pd
 
@@ -164,17 +164,17 @@ def save_data(data: dict) -> None:
     if missing_keys:
         raise ValueError(f"Missing required keys in data dict: {missing_keys}")
 
-    data_dir = Path("data")
-    data_dir.mkdir(parents=True, exist_ok=True)
+    data_dir = "data"
+    os.makedirs(data_dir, exist_ok=True)
 
     try:
         data["players_df"].to_csv(
-            data_dir / "players_data.csv", index=True, index_label="id"
+            f"{data_dir}/players_data.csv", index=True, index_label="id"
         )
-        data["history_df"].to_csv(data_dir / "player_histories.csv", index=False)
-        data["fdr_df"].to_csv(data_dir / "fixture_difficulty_ratings.csv", index=False)
+        data["history_df"].to_csv(f"{data_dir}/player_histories.csv", index=False)
+        data["fdr_df"].to_csv(f"{data_dir}/fixture_difficulty_ratings.csv", index=False)
 
-        with (data_dir / "scoring.json").open("w") as f:
+        with open(f"{data_dir}/scoring.json", "w") as f:
             json.dump(data["scoring"], f, indent=4)
     except Exception as e:
         logger.error(f"Failed to save data: {e}")
@@ -184,7 +184,7 @@ def save_data(data: dict) -> None:
 def load_parameters() -> dict:
     """Load and return parameters from the parameters.json file."""
     try:
-        with Path("data/parameters.json").open() as f:
+        with open("data/parameters.json") as f:
             return json.load(f)
     except FileNotFoundError:
         logger.error("Parameters file not found at data/parameters.json")

@@ -4,10 +4,10 @@ Provides simple functions to check whether data should be refreshed and
 to record the date of the last update.
 """
 
+import os
 from datetime import datetime, timezone
-from pathlib import Path
 
-STAMP_FILE = Path(__file__).parent.parent / "data" / "last_update.txt"
+STAMP_FILE = os.path.join(os.path.dirname(__file__), "..", "data", "last_update.txt")
 
 
 def should_update() -> bool:
@@ -20,11 +20,12 @@ def should_update() -> bool:
         exist or it is not from today), False otherwise.
 
     """
-    if not STAMP_FILE.exists():
+    if not os.path.exists(STAMP_FILE):
         return True
 
     try:
-        last_date = STAMP_FILE.read_text().strip()
+        with open(STAMP_FILE, "r") as f:
+            last_date = f.read().strip()
         return last_date != str(datetime.now(tz=timezone.utc).date())
     except (OSError, IOError):
         # If we can't read the file, assume we should update
@@ -40,8 +41,9 @@ def mark_updated() -> None:
 
     """
     try:
-        STAMP_FILE.parent.mkdir(parents=True, exist_ok=True)
-        STAMP_FILE.write_text(str(datetime.now(tz=timezone.utc).date()) + "\n")
+        os.makedirs(os.path.dirname(STAMP_FILE), exist_ok=True)
+        with open(STAMP_FILE, "w") as f:
+            f.write(str(datetime.now(tz=timezone.utc).date()) + "\n")
     except (OSError, IOError) as e:
         # Log or re-raise depending on application needs
         raise RuntimeError(f"Failed to update stamp file: {e}") from e

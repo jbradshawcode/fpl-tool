@@ -5,8 +5,8 @@ by position with their expected and actual points per 90 minutes.
 """
 
 import json
+import os
 import webbrowser
-from pathlib import Path
 from threading import Timer
 
 import pandas as pd
@@ -52,7 +52,7 @@ def load_data():
         fdr_df["team_id"] = fdr_df["team_id"].astype(int)
         fdr_df["fixture_difficulty"] = fdr_df["fixture_difficulty"].astype(int)
 
-        with Path("data/scoring.json").open() as f:
+        with open("data/scoring.json") as f:
             scoring = json.load(f)
 
     # Calculate expected points
