@@ -1,4 +1,36 @@
-data/last_update.txt
+# Auto-generated data files
 data/player_histories.csv
 data/players_data.csv
+data/fixture_difficulty_ratings.csv
+data/last_update.txt
 data/scoring.json
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Cache directories
+.ruff_cache/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Lock files (keep uv.lock but ignore others)
+*.lock
+!uv.lock
