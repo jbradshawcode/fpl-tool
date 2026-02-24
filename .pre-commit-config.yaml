@@ -6,11 +6,9 @@ repos:
         entry: uv run ruff format .
         language: system
         files: \.py$
-        pass: true
 
       - id: ruff-check
         name: ruff check
         entry: uv run ruff check .
         language: system
         files: \.py$
-        pass: false
