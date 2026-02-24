@@ -155,6 +155,16 @@ h1 {
     min-width: 0;
 }
 
+/* ── Future window visibility ────────────────────────────────────────────── */
+
+#future-window-item[data-visible="false"] {
+    display: none;
+}
+
+#future-window-item[data-visible="true"] {
+    display: flex;
+}
+
 .position-selector label {
     font-weight: 600;
     color: #495057;

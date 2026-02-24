@@ -20,15 +20,13 @@
     </div>
 
     {# Pass server-rendered state to fpl.js as a plain JS object #}
-    <script>
-        const FPL = {
-            maxGames:         {{ max_games }},
-            selectedPosition: '{{ selected_position }}',
-            sortBy:           '{{ sort_by }}',
-            sortOrder:        '{{ sort_order }}',
-            page:             {{ page }},
-        };
-    </script>
+    <div id="fpl-config"
+        data-max-games="{{ max_games }}"
+        data-selected-position="{{ selected_position }}"
+        data-sort-by="{{ sort_by }}"
+        data-sort-order="{{ sort_order }}"
+        data-page="{{ page }}">
+    </div>
     <script src="{{ url_for('static', filename='fpl.js') }}"></script>
 </body>
 </html>

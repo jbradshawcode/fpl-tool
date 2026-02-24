@@ -92,7 +92,7 @@
         </div>
 
         <div class="selector-item" id="future-window-item"
-             style="display: {{ 'flex' if adjust_difficulty else 'none' }};">
+            data-visible="{{ 'true' if adjust_difficulty else 'false' }}">
             <label for="future-slider">Horizon:</label>
             <div class="slider-container">
                 <input

@@ -1,11 +1,19 @@
 /* fpl.js — all interactivity for the FPL Expected Points page
  *
- * Depends on a small inline <script> in index.html that sets:
- *   const FPL = { maxGames, selectedPosition, sortBy, sortOrder, page };
+ * Depends on a data-* attributes on #fpl-config in index.html.
  */
 
 (function () {
     'use strict';
+
+    const cfg = document.getElementById('fpl-config').dataset;
+    const FPL = {
+        maxGames:         parseInt(cfg.maxGames),
+        selectedPosition: cfg.selectedPosition,
+        sortBy:           cfg.sortBy,
+        sortOrder:        cfg.sortOrder,
+        page:             parseInt(cfg.page),
+    };
 
     let changeTimeout;
 
@@ -15,7 +23,7 @@
         const nowOn = pill.getAttribute('data-on') !== 'true';
         pill.setAttribute('data-on', nowOn);
         pill.querySelector('.pill-label').textContent = nowOn ? 'On' : 'Off';
-        document.getElementById('future-window-item').style.display = nowOn ? 'flex' : 'none';
+        document.getElementById('future-window-item').setAttribute('data-visible', nowOn);
         applyFilters({ keepPage: true });
     }
 
@@ -39,7 +47,7 @@
     // ── Build query-string from current UI state ──────────────────────────────
 
     function buildParams({ sort = FPL.sortBy, order = FPL.sortOrder, page = 1 } = {}) {
-        const adjustOn       = document.getElementById('adjust-difficulty-toggle').getAttribute('data-on') === 'true';
+        const adjustOn        = document.getElementById('adjust-difficulty-toggle').getAttribute('data-on') === 'true';
         const currentPosition = document.getElementById('position-dropdown').value;
 
         const params = new URLSearchParams({
@@ -68,7 +76,7 @@
 
     function applyFilters({ keepPage = false } = {}) {
         clearTimeout(changeTimeout);
-        const page   = keepPage ? FPL.page : 1;
+        const page = keepPage ? FPL.page : 1;
         window.location.href = '/?' + buildParams({ page }).toString();
     }
 
