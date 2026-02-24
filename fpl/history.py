@@ -10,6 +10,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import numpy as np
 import pandas as pd
+from typing import List, Dict
 from tqdm import tqdm
 
 from helpers.api import fetch_data
@@ -17,14 +18,14 @@ from helpers.config import POS_MAP, SUPPORTED_HISTORY_METRICS
 from helpers.loading import load_parameters
 
 
-def fetch_player_history(element_id: int, team_map: dict[int, str]) -> pd.DataFrame:
+def fetch_player_history(element_id: int, team_map: Dict[int, str]) -> pd.DataFrame:
     """Retrieve and format historical match data for a single player.
 
     Parameters
     ----------
     element_id : int
         Player ID used by the FPL API.
-    team_map : dict[int, str]
+    team_map : Dict[int, str]
         Mapping from team ID to readable team name.
 
     Returns
@@ -57,17 +58,17 @@ def fetch_player_history(element_id: int, team_map: dict[int, str]) -> pd.DataFr
 
 
 def fetch_all_histories(
-    player_ids: list[int],
-    team_map: dict[int, str],
+    player_ids: List[int],
+    team_map: Dict[int, str],
     max_workers: int = 20,
 ) -> pd.DataFrame:
     """Fetch match histories for multiple players concurrently.
 
     Parameters
     ----------
-    player_ids : list[int]
+    player_ids : List[int]
         List of player element IDs.
-    team_map : dict[int, str]
+    team_map : Dict[int, str]
         Mapping from team ID to readable team names.
     max_workers : int, optional
         Number of worker threads to use for parallel requests.

@@ -3,7 +3,7 @@ name = "fpl-tool"
 version = "0.1.0"
 description = "Flask web application for Fantasy Premier League expected points analysis"
 authors = [{name = "Your Name"}]
-requires-python = ">=3.9"
+requires-python = ">=3.8"
 dependencies = [
     "flask>=2.3.0",
     "pandas>=2.0.0", 

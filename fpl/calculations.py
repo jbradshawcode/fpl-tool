@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 
 from copy import deepcopy
-from typing import Optional
+from typing import Optional, Tuple
 
 from helpers.logger import get_logger
 
@@ -10,7 +10,7 @@ from helpers.logger import get_logger
 logger = get_logger(__name__)
 
 
-def build_difficulty_lookup(history_df: pd.DataFrame) -> tuple[np.ndarray, np.ndarray]:
+def build_difficulty_lookup(history_df: pd.DataFrame) -> Tuple[np.ndarray, np.ndarray]:
     """Build interpolation arrays for fixture difficulty scaling factors.
 
     Computes mean xGI per difficulty level (1-5), normalised to difficulty 3.

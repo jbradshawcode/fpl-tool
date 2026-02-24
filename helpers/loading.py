@@ -10,6 +10,7 @@ This module provides functions to:
 import json
 import logging
 import os
+from typing import List, Dict
 
 import pandas as pd
 
@@ -42,7 +43,7 @@ def initialise_data(endpoint: str) -> dict:
     return data
 
 
-def _build_fixture_difficulty_map(fixtures: list[dict]) -> pd.DataFrame:
+def _build_fixture_difficulty_map(fixtures: List[Dict]) -> pd.DataFrame:
     """Build a lookup table of fixture difficulty for all fixtures.
 
     Each fixture produces two rows — one per team perspective.
@@ -50,7 +51,7 @@ def _build_fixture_difficulty_map(fixtures: list[dict]) -> pd.DataFrame:
 
     Parameters
     ----------
-    fixtures : list[dict]
+    fixtures : List[Dict]
         Raw fixture objects from the FPL fixtures endpoint.
 
     Returns
