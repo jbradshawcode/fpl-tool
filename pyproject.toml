@@ -26,3 +26,8 @@ target-version = "py39"
 [tool.black]
 line-length = 88
 target-version = ['py39']
+
+[dependency-groups]
+dev = [
+    "pre-commit>=3.5.0",
+]
