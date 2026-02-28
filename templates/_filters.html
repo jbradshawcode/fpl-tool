@@ -2,9 +2,26 @@
    Context variables required:
      all_positions, selected_position, all_teams, selected_team,
      adjust_difficulty, mins_threshold, global_price_min, global_price_max,
-     price_max, time_period, max_games, horizon, remaining_games
+     price_max, time_period, max_games, horizon, remaining_games, search_term
 #}
 <div class="position-selector">
+
+    <!-- Row 0: Search -->
+    <div class="selector-row-search">
+
+        <div class="selector-item selector-item--search">
+            <label for="search-input">Search Player:</label>
+            <input
+                type="text"
+                id="search-input"
+                class="search-input"
+                placeholder="Search by name (e.g., Van Dijk, Salah, etc.)"
+                value="{{ search_term }}"
+                oninput="scheduleSearch()"
+            >
+        </div>
+
+    </div>
 
     <!-- Row 1: Dropdowns + Toggle -->
     <div class="selector-row-dropdowns">

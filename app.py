@@ -10,11 +10,11 @@ import webbrowser
 from threading import Timer
 
 import pandas as pd
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, jsonify
 
 from fpl import calculations, history
 from helpers.config import BOOTSTRAP_STATIC_ENDPOINT
-from helpers.loading import initialise_data
+from helpers.loading import initialise_data, search_players
 from helpers.logger import setup_logger, get_logger
 from helpers.update_guard import mark_updated, should_update
 
@@ -100,6 +100,7 @@ def index():
         sort_order = request.args.get("order", "desc", type=str)
         selected_team = request.args.get("team", "", type=str)
         price_max = request.args.get("price_max", None, type=float)
+        search_term = request.args.get("search", "", type=str)
         adjust_difficulty = (
             request.args.get("adjust_difficulty", "true", type=str) == "true"
         )
@@ -169,9 +170,35 @@ def index():
         if selected_team and "team_name" in df.columns:
             df = df[df["team_name"] == selected_team]
 
+        # Apply search filter
+        if search_term and search_term.strip():
+            # Search in the original players_df to get all name fields
+            filtered_players = search_players(players_df, search_term)
+            # Filter df to only include players that match the search
+            if "web_name" in df.columns and len(filtered_players) > 0:
+                df = df[df["web_name"].isin(filtered_players["web_name"])]
+            elif len(filtered_players) == 0:
+                # No search results - return empty DataFrame
+                df = pd.DataFrame()
+
         # Apply sorting
         ascending = sort_order == "asc"
-        df = df.sort_values(by=sort_by, ascending=ascending).reset_index(drop=True)
+        if len(df) > 0 and sort_by in df.columns:
+            df = df.sort_values(by=sort_by, ascending=ascending).reset_index(drop=True)
+            logger.info(
+                f"Sorting by {sort_by} ({'asc' if ascending else 'desc'}) - {len(df)} results"
+            )
+        elif len(df) > 0:
+            # If sort_by column doesn't exist, use a default column that should exist
+            default_sort_col = "web_name" if "web_name" in df.columns else df.columns[0]
+            df = df.sort_values(by=default_sort_col, ascending=ascending).reset_index(
+                drop=True
+            )
+            logger.warning(
+                f"Sort column '{sort_by}' not found, using '{default_sort_col}' instead"
+            )
+        else:
+            logger.info("No results to sort")
 
         # Calculate pagination
         total_players = len(df)
@@ -213,11 +240,126 @@ def index():
             global_price_max=global_price_max,
             adjust_difficulty=adjust_difficulty,
             horizon=horizon,
+            search_term=search_term,
         )
 
     except Exception as e:
         logger.error(f"Error loading data: {e}")
         return f"Error loading data: {e}", 500
+
+
+@app.route("/api/players")
+def api_players():
+    """API endpoint for filtered player data (AJAX)."""
+    try:
+        players_df, history_df, fdr_df, scoring = load_data()
+
+        # Get query parameters (same as main route)
+        selected_position = request.args.get("position", "", type=str)
+        mins_threshold = request.args.get("mins", 70, type=int)
+        time_period = request.args.get("games", 5, type=int)
+        sort_by = request.args.get("sort", "expected_points", type=str)
+        sort_order = request.args.get("order", "desc", type=str)
+        selected_team = request.args.get("team", "", type=str)
+        price_max = request.args.get("price_max", None, type=float)
+        search_term = request.args.get("search", "", type=str)
+        adjust_difficulty = (
+            request.args.get("adjust_difficulty", "true", type=str) == "true"
+        )
+        horizon = request.args.get("horizon", 5, type=int)
+
+        # Calculate max games available
+        max_games = int(history_df["round"].max()) if len(history_df) > 0 else 38
+        total_rounds = 38
+        remaining_games = total_rounds - max_games
+        horizon = min(horizon, remaining_games)
+
+        fdr_arg = fdr_df if adjust_difficulty else None
+        horizon_arg = horizon if adjust_difficulty else None
+
+        # Get player data (same logic as main route)
+        if selected_position:
+            df = calculations.expected_points_per_90(
+                history_df=history_df,
+                players_df=players_df,
+                position=selected_position,
+                mins_threshold=mins_threshold / 100,
+                time_period=time_period if time_period < max_games else None,
+                fdr_df=fdr_arg,
+                horizon=horizon_arg,
+            )
+        else:
+            # Combine all positions
+            all_dfs = []
+            for pos in ["GKP", "DEF", "MID", "FWD"]:
+                all_dfs.append(
+                    calculations.expected_points_per_90(
+                        history_df=history_df,
+                        players_df=players_df,
+                        position=pos,
+                        mins_threshold=mins_threshold / 100,
+                        time_period=time_period if time_period < max_games else None,
+                        fdr_df=fdr_arg,
+                        horizon=horizon_arg,
+                    )
+                )
+            df = pd.concat(all_dfs, ignore_index=True)
+
+        # Apply search filter BEFORE formatting
+        if search_term and search_term.strip():
+            logger.info(
+                f"API: Searching for '{search_term}' in DataFrame with {len(df)} rows"
+            )
+            filtered_players = search_players(players_df, search_term)
+            logger.info(f"API: Search found {len(filtered_players)} matches")
+
+            if "web_name" in df.columns and len(filtered_players) > 0:
+                original_len = len(df)
+                df = df[df["web_name"].isin(filtered_players["web_name"])]
+                logger.info(
+                    f"API: Filtered DataFrame from {original_len} to {len(df)} rows"
+                )
+            elif len(filtered_players) == 0:
+                logger.info("API: No search matches found, returning empty result")
+                # Return empty result immediately without formatting
+                return jsonify({"players": [], "total_players": 0, "success": True})
+
+        # Format data for display (same as main route)
+        df = format_player_data(df)
+
+        # Apply team filter
+        if selected_team and "team_name" in df.columns:
+            df = df[df["team_name"] == selected_team]
+
+        # Apply price filter
+        if price_max is not None and len(df) > 0 and "now_cost" in df.columns:
+            df = df[df["now_cost"] <= price_max]
+
+        # Apply sorting
+        ascending = sort_order == "asc"
+        if len(df) > 0 and sort_by in df.columns:
+            df = df.sort_values(by=sort_by, ascending=ascending).reset_index(drop=True)
+        elif len(df) > 0:
+            default_sort_col = "web_name" if "web_name" in df.columns else df.columns[0]
+            df = df.sort_values(by=default_sort_col, ascending=ascending).reset_index(
+                drop=True
+            )
+
+        # Return JSON response
+        logger.info(f"API: Returning {len(df)} players in response")
+        return jsonify(
+            {
+                "players": df.to_dict("records"),
+                "total_players": len(df),
+                "success": True,
+            }
+        )
+
+    except Exception as e:
+        logger.error(f"Error in API: {e}")
+        return jsonify(
+            {"players": [], "total_players": 0, "success": False, "error": str(e)}
+        )
 
 
 if __name__ == "__main__":
