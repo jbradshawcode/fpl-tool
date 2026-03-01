@@ -10,7 +10,7 @@ import webbrowser
 from threading import Timer
 
 import pandas as pd
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, session
 
 from fpl import calculations, history
 from helpers.config import BOOTSTRAP_STATIC_ENDPOINT
@@ -24,6 +24,7 @@ setup_logger()
 logger = get_logger(__name__)
 
 app = Flask(__name__)
+app.secret_key = "fpl-secret-key-for-sessions"  # Required for session management
 
 
 def open_browser():
@@ -163,14 +164,29 @@ def index():
         if price_max is None:
             price_max = global_price_max
 
-        # Apply price filter
+        # Get pinned players from session (more reliable than cookies)
+        pinned_players = session.get("pinned_players", [])
+        pinned_df = pd.DataFrame()
+        logger.info(f"Pinned players from session: {pinned_players}")
+
+        if pinned_players and len(df) > 0:
+            if "web_name" in df.columns:
+                # Extract pinned players
+                pinned_df = df[df["web_name"].isin(pinned_players)].copy()
+                logger.info(
+                    f"Extracted {len(pinned_df)} pinned players: {pinned_df['web_name'].tolist()}"
+                )
+                # Remove them from the main dataset for filtering
+                df = df[~df["web_name"].isin(pinned_players)].copy()
+
+        # Apply price filter to non-pinned players
         df = df[df["now_cost"] <= price_max]
 
-        # Apply team filter
+        # Apply team filter to non-pinned players
         if selected_team and "team_name" in df.columns:
             df = df[df["team_name"] == selected_team]
 
-        # Apply search filter
+        # Apply search filter to non-pinned players
         if search_term and search_term.strip():
             # Search in the original players_df to get all name fields
             filtered_players = search_players(players_df, search_term)
@@ -178,10 +194,10 @@ def index():
             if "web_name" in df.columns and len(filtered_players) > 0:
                 df = df[df["web_name"].isin(filtered_players["web_name"])]
             elif len(filtered_players) == 0:
-                # No search results - return empty DataFrame
+                # No search results - return empty DataFrame (keep pinned players)
                 df = pd.DataFrame()
 
-        # Apply sorting
+        # Apply sorting to non-pinned players
         ascending = sort_order == "asc"
         if len(df) > 0 and sort_by in df.columns:
             df = df.sort_values(by=sort_by, ascending=ascending).reset_index(drop=True)
@@ -199,6 +215,24 @@ def index():
             )
         else:
             logger.info("No results to sort")
+
+        # Sort pinned players and combine with filtered results
+        if len(pinned_df) > 0:
+            # Sort pinned players by the same criteria
+            if sort_by in pinned_df.columns:
+                pinned_df = pinned_df.sort_values(
+                    by=sort_by, ascending=ascending
+                ).reset_index(drop=True)
+            else:
+                pinned_df = pinned_df.sort_values(
+                    by="web_name", ascending=True
+                ).reset_index(drop=True)
+
+            # Combine: pinned players first, then filtered results
+            df = pd.concat([pinned_df, df], ignore_index=True)
+            logger.info(
+                f"Combined {len(pinned_df)} pinned players with {len(df) - len(pinned_df)} filtered results"
+            )
 
         # Calculate pagination
         total_players = len(df)
@@ -360,6 +394,36 @@ def api_players():
         return jsonify(
             {"players": [], "total_players": 0, "success": False, "error": str(e)}
         )
+
+
+@app.route("/api/pin-player", methods=["POST"])
+def pin_player():
+    """Save or unpin a player in the session."""
+    try:
+        data = request.get_json()
+        player_name = data.get("player_name")
+        action = data.get("action")  # 'pin' or 'unpin'
+
+        if not player_name or action not in ["pin", "unpin"]:
+            return jsonify({"success": False, "error": "Invalid request"})
+
+        # Get current pinned players from session
+        pinned = session.get("pinned_players", [])
+
+        if action == "pin" and player_name not in pinned:
+            pinned.append(player_name)
+        elif action == "unpin" and player_name in pinned:
+            pinned.remove(player_name)
+
+        # Save to session
+        session["pinned_players"] = pinned
+        logger.info(f"Updated pinned players: {pinned}")
+
+        return jsonify({"success": True, "pinned_players": pinned})
+
+    except Exception as e:
+        logger.error(f"Error pinning player: {e}")
+        return jsonify({"success": False, "error": str(e)})
 
 
 if __name__ == "__main__":

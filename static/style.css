@@ -381,6 +381,44 @@ tr:hover { background-color: #f8f9fa; }
     font-style: italic;
 }
 
+/* ── Pin functionality ────────────────────────────────────────────────────── */
+
+.context-menu {
+    position: absolute;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 1000;
+    min-width: 160px;
+    overflow: hidden;
+}
+
+.context-menu-item {
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background-color 0.2s;
+}
+
+.context-menu-item:hover {
+    background-color: #f8f9fa;
+}
+
+.pinned-row {
+    background-color: #fff9e6 !important;
+    border-left: 3px solid #ffc107;
+}
+
+.pinned-row:hover {
+    background-color: #fff5d6 !important;
+}
+
+.pin-icon {
+    margin-right: 0.25rem;
+    font-size: 0.85rem;
+}
+
 /* ── Pagination ──────────────────────────────────────────────────────────── */
 
 .pagination {
