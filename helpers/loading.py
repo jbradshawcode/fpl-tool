@@ -197,64 +197,53 @@ def load_parameters() -> dict:
 
 
 def search_players(players_df: pd.DataFrame, search_term: str) -> pd.DataFrame:
-    """Search for players by name across web_name field.
+    """Search for players by name across first_name, second_name, and web_name.
 
     Parameters
     ----------
     players_df : pd.DataFrame
-        DataFrame containing player data with web_name column
+        DataFrame containing player data with name columns.
     search_term : str
-        Search term to match against player names
+        Search term to match against player names (case-insensitive).
+        Matched as a substring against each of: first_name, second_name,
+        web_name, and the combined "first_name second_name" full name.
 
     Returns
     -------
     pd.DataFrame
-        Filtered DataFrame containing players whose names contain the search term
-        (case-insensitive, matches web_name field)
+        Filtered DataFrame containing players whose names contain the search term.
     """
     # Handle empty or invalid search terms
     if not search_term or not isinstance(search_term, str) or not search_term.strip():
         return players_df.copy()
 
-    search_term_lower = search_term.lower().strip()
+    search_lower = search_term.lower().strip()
 
     # Create a copy to avoid modifying original
-    players_df = players_df.copy()
+    df = players_df.copy()
 
-    # Fill NaN values with empty strings to avoid errors
-    if "web_name" in players_df.columns:
-        players_df["web_name"] = players_df["web_name"].fillna("")
-
-        # Create a more precise search - exact sub-match
-        # Normalize both search term and player names for better matching
-        def contains_exact_submatch(name, search_term):
-            """Check if search_term is an exact sub-match of name."""
-            if not name or not search_term:
-                return False
-            # Remove extra whitespace and convert to lowercase
-            name_clean = str(name).strip().lower()
-            search_clean = search_term.strip().lower()
-            # Check for exact sub-match
-            return search_clean in name_clean
-
-        # Apply the precise search
-        mask = players_df["web_name"].apply(
-            lambda x: contains_exact_submatch(x, search_term_lower)
-        )
-
-        result = players_df[mask].copy()
-
-        # Log the actual matches for debugging
-        if len(result) > 0:
-            matched_names = result["web_name"].tolist()[:10]  # First 10 matches
-            logger.info(
-                f"Search: Found {len(result)} matches for '{search_term}'. Sample matches: {matched_names}"
-            )
+    # Build a combined name column from all available name fields
+    name_fields = ["first_name", "second_name", "web_name"]
+    for col in name_fields:
+        if col in df.columns:
+            df[col] = df[col].fillna("").astype(str)
         else:
-            logger.info(f"Search: Found 0 matches for '{search_term}'")
+            df[col] = ""
 
-        return result
+    # Concatenate into a single searchable string per player
+    df["_full_name"] = (
+        df["first_name"] + " " + df["second_name"] + " " + df["web_name"]
+    ).str.lower()
+
+    mask = df["_full_name"].str.contains(search_lower, na=False)
+    result = df.loc[mask].drop(columns=["_full_name"]).copy()
+
+    if len(result) > 0:
+        matched_names = result["web_name"].tolist()[:10]
+        logger.info(
+            f"Search: Found {len(result)} matches for '{search_term}'. Sample matches: {matched_names}"
+        )
     else:
-        # If no web_name column, return empty DataFrame
-        logger.error("Search: No web_name column found in players_df")
-        return pd.DataFrame()
+        logger.info(f"Search: Found 0 matches for '{search_term}'")
+
+    return result
