@@ -49,7 +49,7 @@
         clearTimeout(searchTimeout);
         searchTimeout = setTimeout(function () {
             applyFilters();  // Use full-page navigation so server handles pagination
-        }, 300);
+        }, 600);
     }
 
     // ── Build query-string from current UI state ──────────────────────────────
