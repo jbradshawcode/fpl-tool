@@ -175,14 +175,22 @@ def calculate_expected_points(
         history_df["pos_abbr"].map(scoring["clean_sheets"]) * probability_clean_sheet
     )
 
+    # Goals conceded penalty: -1 point per 2 goals conceded
+    # Linear mapping: expected penalty = xGC × (-0.5 points)
+    xgc = history_df["expected_goals_conceded"].astype(float)
+    expected_gc_penalty_points = np.where(
+        history_df["minutes"] >= params["long_play_threshold"],
+        xgc * history_df["pos_abbr"].map(scoring["goals_conceded"]) / 2,  # xGC × (-0.5)
+        0,
+    )
+
     # Vectorised expected points calculation
     history_df["expected_points"] = (
         history_df["expected_goals"].astype(float)
         * history_df["pos_abbr"].map(scoring["goals_scored"])
         + history_df["expected_assists"].astype(float) * scoring["assists"]
         + expected_clean_sheet_points
-        + (history_df["expected_goals_conceded"].astype(float) // 2)
-        * history_df["pos_abbr"].map(scoring["goals_conceded"])
+        + expected_gc_penalty_points  # New probabilistic goals conceded penalty
         + history_df["own_goals"] * scoring["own_goals"]
         + history_df["penalties_saved"] * scoring["penalties_saved"]
         + history_df["penalties_missed"] * scoring["penalties_missed"]
