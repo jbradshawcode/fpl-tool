@@ -47,87 +47,9 @@
 
     function scheduleSearch() {
         clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(applySearch, 300); // Faster debounce for search only
-    }
-
-    // ── AJAX Search (no page reload) ───────────────────────────────────────────
-
-    function applySearch() {
-        const searchValue = document.getElementById('search-input').value.trim();
-        const params = buildParams(); // Build current filter parameters
-        
-        // Fetch filtered data from API
-        fetch('/api/players?' + params.toString())
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    updateTable(data); // Pass the full data object, not just data.players
-                } else {
-                    console.error('Search error:', data.error);
-                }
-            })
-            .catch(error => {
-                console.error('Search fetch error:', error);
-            });
-    }
-
-    function updateTable(data) {
-        const tableBody = document.querySelector('tbody');
-        if (!tableBody) return;
-
-        // Clear existing rows
-        tableBody.innerHTML = '';
-
-        if (data.players.length === 0) {
-            // Show no results message
-            const row = document.createElement('tr');
-            row.innerHTML = '<td colspan="8" style="text-align: center; padding: 2rem;">No players found matching your search.</td>';
-            tableBody.appendChild(row);
-            
-            // Hide pagination
-            const pagination = document.querySelector('.pagination');
-            if (pagination) {
-                pagination.style.display = 'none';
-            }
-            return;
-        }
-
-        // Add player rows with proper formatting
-        data.players.forEach((player, index) => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>${index + 1}</td>
-                <td>${player.web_name || ''}</td>
-                <td>${player.team_name || ''}</td>
-                <td>${player.pos_abbr || ''}</td>
-                <td>£${(player.now_cost || 0).toFixed(1)}</td>
-                <td>${(player.expected_points || 0).toFixed(2)}</td>
-                <td>${(player.actual_points || 0).toFixed(2)}</td>
-                <td>${(player.expected_points_per_90 || 0).toFixed(2)}</td>
-            `;
-            tableBody.appendChild(row);
-        });
-
-        // Update pagination info
-        updatePagination(data.total_players);
-    }
-
-    function updatePagination(totalPlayers) {
-        const pagination = document.querySelector('.pagination');
-        if (!pagination) return;
-
-        if (totalPlayers <= 10) {
-            // Hide pagination if 10 or fewer results
-            pagination.style.display = 'none';
-        } else {
-            // Show pagination
-            pagination.style.display = '';
-            // Update pagination text
-            const paginationText = pagination.querySelector('p');
-            if (paginationText) {
-                paginationText.textContent = `Showing 1-10 of ${totalPlayers} players`;
-            }
-        }
+        searchTimeout = setTimeout(function () {
+            applyFilters();  // Use full-page navigation so server handles pagination
+        }, 300);
     }
 
     // ── Build query-string from current UI state ──────────────────────────────
