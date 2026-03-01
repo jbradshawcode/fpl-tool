@@ -13,13 +13,17 @@ logger = get_logger(__name__)
 def build_difficulty_lookup(history_df: pd.DataFrame) -> Tuple[np.ndarray, np.ndarray]:
     """Build interpolation arrays for fixture difficulty scaling factors.
 
-    Computes mean xGI per difficulty level (1-5), normalised to difficulty 3.
+    Computes mean expected_points per difficulty level (1-5), normalised to
+    difficulty 3.  Using expected_points (rather than expected_goal_involvements)
+    ensures the scaling factor reflects how the *entire* xP metric varies with
+    opponent strength, including components that are largely difficulty-invariant
+    (appearance points, clean-sheet points, etc.).
 
     Parameters
     ----------
     history_df : pd.DataFrame
         Full player match history, must contain fixture_difficulty and
-        expected_goal_involvements columns.
+        expected_points columns.
 
     Returns
     -------
@@ -30,21 +34,21 @@ def build_difficulty_lookup(history_df: pd.DataFrame) -> Tuple[np.ndarray, np.nd
     """
     rdf = (
         history_df.assign(
-            expected_goal_involvements=pd.to_numeric(
-                history_df["expected_goal_involvements"], errors="coerce"
+            expected_points=pd.to_numeric(
+                history_df["expected_points"], errors="coerce"
             ),
             fixture_difficulty=pd.to_numeric(
                 history_df["fixture_difficulty"], errors="coerce"
             ),
         )
-        .groupby("fixture_difficulty")["expected_goal_involvements"]
+        .groupby("fixture_difficulty")["expected_points"]
         .mean()
         .reset_index()
     )
-    rdf["expected_goal_involvements"] /= rdf.loc[
-        rdf["fixture_difficulty"] == 3, "expected_goal_involvements"
+    rdf["expected_points"] /= rdf.loc[
+        rdf["fixture_difficulty"] == 3, "expected_points"
     ].values[0]
-    return rdf["fixture_difficulty"].values, rdf["expected_goal_involvements"].values
+    return rdf["fixture_difficulty"].values, rdf["expected_points"].values
 
 
 def compute_horizon_factor(
