@@ -39,6 +39,7 @@
                 </tr>
             </thead>
             <tbody>
+                {% if position_data.players %}
                 {% for player in position_data.players %}
                 <tr>
                     <td class="rank">{{ player.rank|int }}</td>
@@ -52,6 +53,11 @@
                     <td class="numeric">{{ "%.2f"|format(player.actual_points_per_90) }}</td>
                 </tr>
                 {% endfor %}
+                {% else %}
+                <tr>
+                    <td colspan="9" class="no-results">No players found matching your filters.</td>
+                </tr>
+                {% endif %}
             </tbody>
         </table>
     </div>

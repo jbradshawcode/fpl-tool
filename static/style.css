@@ -373,6 +373,14 @@ tr:hover { background-color: #f8f9fa; }
 .team-name   { color: #6c757d; font-size: 0.85rem; }
 .rank        { font-weight: 600; color: #667eea; }
 
+.no-results {
+    text-align: center;
+    padding: 2rem 1rem;
+    color: #6c757d;
+    font-size: 0.95rem;
+    font-style: italic;
+}
+
 /* ── Pagination ──────────────────────────────────────────────────────────── */
 
 .pagination {
