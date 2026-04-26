@@ -44,6 +44,9 @@ addopts = [
     "--strict-markers",
     "-ra",
 ]
+filterwarnings = [
+    "ignore:urllib3 v2 only supports OpenSSL",
+]
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
     "integration: marks tests as integration tests",
