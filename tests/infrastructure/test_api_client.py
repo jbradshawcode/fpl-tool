@@ -1,5 +1,7 @@
 """Tests for API client infrastructure."""
 
+import pytest
+import requests
 from unittest.mock import patch, Mock
 
 from infrastructure.api_client import fetch_data
@@ -23,12 +25,11 @@ class TestFetchData:
 
     @patch("infrastructure.api_client.requests.get")
     def test_fetch_with_exception(self, mock_get):
-        """Should handle request exceptions gracefully."""
+        """Should raise exception on network errors."""
         mock_get.side_effect = Exception("Network error")
 
-        result = fetch_data("endpoint/")
-
-        assert result is None
+        with pytest.raises(Exception, match="Network error"):
+            fetch_data("endpoint/")
 
 
 class TestAPIErrorHandling:
@@ -36,11 +37,11 @@ class TestAPIErrorHandling:
 
     @patch("infrastructure.api_client.requests.get")
     def test_non_200_status(self, mock_get):
-        """Should handle non-200 status codes."""
+        """Should raise HTTPError on non-200 status codes."""
         mock_response = Mock()
         mock_response.status_code = 404
+        mock_response.raise_for_status.side_effect = requests.HTTPError("404 Not Found")
         mock_get.return_value = mock_response
 
-        result = fetch_data("nonexistent/")
-
-        assert result is None
+        with pytest.raises(requests.HTTPError, match="404 Not Found"):
+            fetch_data("nonexistent/")

@@ -94,22 +94,26 @@ class TestApplyTeamFilter:
 class TestApplySearchFilter:
     """Tests for search term filtering."""
 
-    def test_filters_by_search_term(self, players_for_filtering, sample_players_df):
+    def test_filters_by_search_term(self, players_for_filtering):
         """Should find players matching search term."""
-        result = apply_search_filter(players_for_filtering, "Haa", sample_players_df)
+        result = apply_search_filter(
+            players_for_filtering, "Haa", players_for_filtering
+        )
 
         assert len(result) == 1
         assert result["web_name"].iloc[0] == "Haaland"
 
-    def test_empty_search_term(self, players_for_filtering, sample_players_df):
+    def test_empty_search_term(self, players_for_filtering):
         """Should return all players when search is empty."""
-        result = apply_search_filter(players_for_filtering, "", sample_players_df)
+        result = apply_search_filter(players_for_filtering, "", players_for_filtering)
 
         assert len(result) == 5
 
-    def test_no_matches(self, players_for_filtering, sample_players_df):
+    def test_no_matches(self, players_for_filtering):
         """Should return empty when no matches found."""
-        result = apply_search_filter(players_for_filtering, "XYZ", sample_players_df)
+        result = apply_search_filter(
+            players_for_filtering, "XYZ", players_for_filtering
+        )
 
         assert result.empty
 
