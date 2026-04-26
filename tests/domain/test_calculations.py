@@ -239,10 +239,10 @@ class TestApplyMinutesFilter:
 class TestExpectedPointsPer90:
     """Integration tests for expected points calculation."""
 
-    def test_full_calculation(self, sample_players_df, sample_history_df):
+    def test_full_calculation(self, sample_players_df, processed_history_df):
         """Should calculate expected points per 90 for all players."""
         # Add pos_abbr to history
-        sample_history_df["pos_abbr"] = [
+        processed_history_df["pos_abbr"] = [
             "GKP",
             "GKP",
             "DEF",
@@ -254,7 +254,7 @@ class TestExpectedPointsPer90:
         ]
 
         result = expected_points_per_90(
-            sample_history_df,
+            processed_history_df,
             sample_players_df,
             position=None,  # All positions
             mins_threshold=None,
@@ -266,9 +266,9 @@ class TestExpectedPointsPer90:
         assert "expected_points" in result.columns
         assert not result.empty
 
-    def test_position_filter(self, sample_players_df, sample_history_df):
+    def test_position_filter(self, sample_players_df, processed_history_df):
         """Should filter by position correctly."""
-        sample_history_df["pos_abbr"] = [
+        processed_history_df["pos_abbr"] = [
             "GKP",
             "GKP",
             "DEF",
@@ -280,7 +280,7 @@ class TestExpectedPointsPer90:
         ]
 
         result = expected_points_per_90(
-            sample_history_df,
+            processed_history_df,
             sample_players_df,
             position="FWD",
         )
