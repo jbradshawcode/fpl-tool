@@ -101,6 +101,137 @@ def compute_horizon_factor(
     return horizon_factor
 
 
+def _filter_by_time_period(
+    df: pd.DataFrame, time_period: Optional[int]
+) -> pd.DataFrame:
+    """Filter history dataframe by recent rounds."""
+    if time_period is None:
+        return df
+    latest_round = int(df["round"].max())
+    recent_rounds = list(range(latest_round - time_period + 1, latest_round + 1))
+    return df[df["round"].isin(recent_rounds)]
+
+
+def _filter_by_position(df: pd.DataFrame, position: Optional[str]) -> pd.DataFrame:
+    """Filter history dataframe by position code."""
+    if position is None:
+        return df
+    return df[df["pos_abbr"] == position]
+
+
+def _ensure_numeric_dtypes(df: pd.DataFrame) -> pd.DataFrame:
+    """Ensure key columns are numeric after CSV round-trip."""
+    for col in ["minutes", "expected_points", "total_points", "fixture_difficulty"]:
+        df[col] = pd.to_numeric(df[col], errors="coerce")
+    return df
+
+
+def _aggregate_player_stats(df: pd.DataFrame) -> pd.DataFrame:
+    """Aggregate player statistics grouped by element."""
+    # Group by player and fixture (opponent disambiguates double gameweeks)
+    grouped = df.groupby(["element", "round", "opponent_team_name"]).agg(
+        total_minutes=("minutes", "sum"),
+        total_expected_points=("expected_points", "sum"),
+        total_actual_points=("total_points", "sum"),
+        avg_fixture_difficulty=("fixture_difficulty", "mean"),
+    )
+
+    # Collapse back to element level
+    return grouped.groupby("element").agg(
+        total_minutes=("total_minutes", "sum"),
+        total_expected_points=("total_expected_points", "sum"),
+        total_actual_points=("total_actual_points", "sum"),
+        avg_fixture_difficulty=("avg_fixture_difficulty", "mean"),
+    )
+
+
+def _apply_horizon_scaling(
+    grouped: pd.DataFrame,
+    players_df: pd.DataFrame,
+    fdr_df: Optional[pd.DataFrame],
+    horizon: Optional[int],
+    latest_round: int,
+    xp: np.ndarray,
+    yp: np.ndarray,
+) -> pd.DataFrame:
+    """Apply horizon difficulty scaling to player stats."""
+    grouped["avg_fixture_difficulty"] = grouped["avg_fixture_difficulty"].fillna(3.0)
+    grouped["recency_factor"] = np.interp(grouped["avg_fixture_difficulty"], xp, yp)
+
+    if fdr_df is not None and horizon is not None:
+        horizon_factor = compute_horizon_factor(
+            players_df, fdr_df, latest_round, horizon, xp, yp
+        )
+        grouped["horizon_factor"] = horizon_factor.reindex(grouped.index).fillna(1.0)
+        grouped["scale"] = (
+            (grouped["horizon_factor"] / grouped["recency_factor"])
+            .fillna(1.0)
+            .replace([np.inf, -np.inf], 1.0)
+        )
+    else:
+        grouped["horizon_factor"] = np.nan
+        grouped["scale"] = 1.0
+
+    return grouped
+
+
+def _calculate_per_90_stats(grouped: pd.DataFrame, df: pd.DataFrame) -> pd.DataFrame:
+    """Calculate per-90 and percentage statistics."""
+    safe_minutes = grouped["total_minutes"].replace(0, np.nan)
+
+    grouped["expected_points_per_90"] = (
+        (grouped["total_expected_points"] / safe_minutes) * 90 * grouped["scale"]
+    ).fillna(0)
+    grouped["actual_points_per_90"] = (
+        (grouped["total_actual_points"] / safe_minutes) * 90
+    ).fillna(0)
+
+    # Count fixtures per player
+    fixtures_per_player = df.groupby("element").size().rename("fixture_count")
+    grouped["fixture_count"] = fixtures_per_player.reindex(grouped.index)
+
+    grouped["percentage_of_mins_played"] = (
+        grouped["total_minutes"] / (grouped["fixture_count"] * 90)
+    ).fillna(0)
+    grouped["actual_points"] = (
+        grouped["total_actual_points"] / grouped["fixture_count"]
+    ).fillna(0)
+    grouped["expected_points"] = (
+        grouped["expected_points_per_90"] * grouped["percentage_of_mins_played"]
+    ).fillna(0)
+
+    return grouped
+
+
+def _apply_minutes_filter(
+    grouped: pd.DataFrame, mins_threshold: Optional[float]
+) -> pd.DataFrame:
+    """Filter players by minimum minutes percentage."""
+    if mins_threshold is None:
+        return grouped
+    return grouped[grouped["percentage_of_mins_played"] >= mins_threshold]
+
+
+def _merge_and_rank(grouped: pd.DataFrame, players_df: pd.DataFrame) -> pd.DataFrame:
+    """Merge with player metadata and rank by expected points."""
+    # Drop intermediate columns
+    grouped = grouped.drop(
+        columns=[
+            "total_expected_points",
+            "total_actual_points",
+            "total_minutes",
+            "scale",
+        ],
+        errors="ignore",
+    )
+
+    merged = grouped.merge(players_df, left_index=True, right_index=True, how="left")
+    merged = merged.sort_values("expected_points", ascending=False)
+    merged = merged.reset_index(drop=False)
+    merged.index = merged.index + 1
+    return merged
+
+
 def expected_points_per_90(
     history_df: pd.DataFrame,
     players_df: pd.DataFrame,
@@ -128,106 +259,33 @@ def expected_points_per_90(
         Full fixture difficulty map. Required if horizon is set.
     horizon : int or None, optional
         Number of upcoming rounds to use for forward difficulty scaling.
-        If provided alongside fdr_df, xP and xP/90 are scaled by
-        (horizon_factor / recency_factor).
 
     Returns
     -------
     pd.DataFrame
-        Ranked table with player metadata merged in. If horizon scaling is
-        active, includes adjusted_expected_points and adjusted_expected_points_per_90.
-
+        Ranked table with player metadata merged in.
     """
-    # Build the difficulty lookup from the full history (not time-filtered)
+    # Build difficulty lookup
     xp, yp = build_difficulty_lookup(history_df)
+    latest_round = int(history_df["round"].max())
 
+    # Filter and prepare data
     df = deepcopy(history_df)
+    df = _filter_by_time_period(df, time_period)
+    df = _filter_by_position(df, position)
+    df = _ensure_numeric_dtypes(df)
 
-    # Filter by recent rounds if time_period is specified
-    if time_period is not None:
-        latest_round = int(history_df["round"].max())
-        recent_rounds = list(range(latest_round - time_period + 1, latest_round + 1))
-        df = df[df["round"].isin(recent_rounds)]
-    else:
-        latest_round = int(history_df["round"].max())
+    # Aggregate stats
+    grouped = _aggregate_player_stats(df)
 
-    # Filter by position if specified
-    if position is not None:
-        df = df[df["pos_abbr"] == position]
-
-    # Ensure numeric dtypes (columns may be object after CSV round-trip)
-    for col in ["minutes", "expected_points", "total_points", "fixture_difficulty"]:
-        df[col] = pd.to_numeric(df[col], errors="coerce")
-
-    # Group by player and fixture (opponent disambiguates double gameweeks)
-    grouped = df.groupby(["element", "round", "opponent_team_name"]).agg(
-        total_minutes=("minutes", "sum"),
-        total_expected_points=("expected_points", "sum"),
-        total_actual_points=("total_points", "sum"),
-        avg_fixture_difficulty=("fixture_difficulty", "mean"),
+    # Apply difficulty scaling
+    grouped = _apply_horizon_scaling(
+        grouped, players_df, fdr_df, horizon, latest_round, xp, yp
     )
 
-    # Collapse back to element level
-    grouped = grouped.groupby("element").agg(
-        total_minutes=("total_minutes", "sum"),
-        total_expected_points=("total_expected_points", "sum"),
-        total_actual_points=("total_actual_points", "sum"),
-        avg_fixture_difficulty=("avg_fixture_difficulty", "mean"),
-    )
+    # Calculate per-90 stats
+    grouped = _calculate_per_90_stats(grouped, df)
 
-    # Build scale: horizon_factor / recency_factor (1.0 if adjustment off)
-    grouped["avg_fixture_difficulty"] = grouped["avg_fixture_difficulty"].fillna(
-        3.0
-    )  # neutral if unknown
-    grouped["recency_factor"] = np.interp(grouped["avg_fixture_difficulty"], xp, yp)
-
-    if fdr_df is not None and horizon is not None:
-        horizon_factor = compute_horizon_factor(
-            players_df, fdr_df, latest_round, horizon, xp, yp
-        )
-        grouped["horizon_factor"] = horizon_factor.reindex(grouped.index).fillna(1.0)
-        scale = (
-            (grouped["horizon_factor"] / grouped["recency_factor"])
-            .fillna(1.0)
-            .replace([np.inf, -np.inf], 1.0)
-        )
-    else:
-        grouped["horizon_factor"] = np.nan
-        scale = 1.0
-
-    # Safe division — 0 minutes gives 0 rather than NaN
-    safe_minutes = grouped["total_minutes"].replace(0, np.nan)
-    grouped["expected_points_per_90"] = (
-        (grouped["total_expected_points"] / safe_minutes) * 90 * scale
-    ).fillna(0)
-    grouped["actual_points_per_90"] = (
-        (grouped["total_actual_points"] / safe_minutes) * 90
-    ).fillna(0)
-    # Count fixtures per player (each row in df is one fixture)
-    fixtures_per_player = df.groupby("element").size().rename("fixture_count")
-    grouped["fixture_count"] = fixtures_per_player.reindex(grouped.index)
-    grouped["percentage_of_mins_played"] = (
-        grouped["total_minutes"] / (grouped["fixture_count"] * 90)
-    ).fillna(0)
-    grouped["actual_points"] = (
-        grouped["total_actual_points"] / grouped["fixture_count"]
-    ).fillna(0)
-    grouped["expected_points"] = (
-        grouped["expected_points_per_90"] * grouped["percentage_of_mins_played"]
-    ).fillna(0)
-
-    # Apply minutes filter
-    if mins_threshold is not None:
-        grouped = grouped[grouped["percentage_of_mins_played"] >= mins_threshold]
-
-    grouped = grouped.drop(
-        columns=["total_expected_points", "total_actual_points", "total_minutes"]
-    )
-
-    # Merge with players_df
-    merged = grouped.merge(players_df, left_index=True, right_index=True, how="left")
-    merged = merged.sort_values("expected_points", ascending=False)
-    merged = merged.reset_index(drop=False)
-    merged.index = merged.index + 1
-
-    return merged
+    # Apply filters and merge
+    grouped = _apply_minutes_filter(grouped, mins_threshold)
+    return _merge_and_rank(grouped, players_df)

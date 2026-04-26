@@ -78,223 +78,272 @@ def format_player_data(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+def get_game_metadata(history_df: pd.DataFrame) -> dict:
+    """Calculate game metadata like max games and remaining rounds."""
+    max_games = int(history_df["round"].max()) if len(history_df) > 0 else 38
+    total_rounds = 38
+    return {
+        "max_games": max_games,
+        "remaining_games": total_rounds - max_games,
+        "default_games": min(5, max_games),
+    }
+
+
+def parse_query_params(request, default_games: int, remaining_games: int) -> dict:
+    """Parse and return all query parameters from request."""
+    return {
+        "selected_position": request.args.get("position", "", type=str),
+        "page": request.args.get("page", 1, type=int),
+        "mins_threshold": request.args.get("mins", 70, type=int),
+        "time_period": request.args.get("games", default_games, type=int),
+        "sort_by": request.args.get("sort", "expected_points", type=str),
+        "sort_order": request.args.get("order", "desc", type=str),
+        "selected_team": request.args.get("team", "", type=str),
+        "price_max": request.args.get("price_max", None, type=float),
+        "search_term": request.args.get("search", "", type=str),
+        "adjust_difficulty": request.args.get("adjust_difficulty", "true", type=str)
+        == "true",
+        "horizon": min(request.args.get("horizon", 5, type=int), remaining_games),
+    }
+
+
+def get_position_names() -> dict:
+    """Return mapping of position codes to display names."""
+    return {
+        "GKP": "Goalkeepers",
+        "DEF": "Defenders",
+        "MID": "Midfielders",
+        "FWD": "Forwards",
+    }
+
+
+def fetch_player_data(
+    players_df: pd.DataFrame,
+    history_df: pd.DataFrame,
+    fdr_df: pd.DataFrame,
+    selected_position: str,
+    mins_threshold: int,
+    time_period: int,
+    max_games: int,
+    adjust_difficulty: bool,
+    horizon: int,
+) -> pd.DataFrame:
+    """Fetch expected points data for selected position(s)."""
+    fdr_arg = fdr_df if adjust_difficulty else None
+    horizon_arg = horizon if adjust_difficulty else None
+
+    if selected_position:
+        return calculations.expected_points_per_90(
+            history_df=history_df,
+            players_df=players_df,
+            position=selected_position,
+            mins_threshold=mins_threshold / 100,
+            time_period=time_period if time_period < max_games else None,
+            fdr_df=fdr_arg,
+            horizon=horizon_arg,
+        )
+
+    # Combine all positions
+    dfs = [
+        calculations.expected_points_per_90(
+            history_df=history_df,
+            players_df=players_df,
+            position=pos,
+            mins_threshold=mins_threshold / 100,
+            time_period=time_period if time_period < max_games else None,
+            fdr_df=fdr_arg,
+            horizon=horizon_arg,
+        )
+        for pos in ["GKP", "DEF", "MID", "FWD"]
+    ]
+    return pd.concat(dfs, ignore_index=True)
+
+
+def extract_pinned_players(df: pd.DataFrame, pinned_players: list) -> tuple:
+    """Extract pinned players from dataframe and return both sets."""
+    if not pinned_players or len(df) == 0 or "web_name" not in df.columns:
+        return pd.DataFrame(), df
+
+    pinned_df = df[df["web_name"].isin(pinned_players)].copy()
+    remaining_df = df[~df["web_name"].isin(pinned_players)].copy()
+
+    if len(pinned_df) > 0:
+        logger.info(f"Extracted {len(pinned_df)} pinned players")
+
+    return pinned_df, remaining_df
+
+
+def apply_filters(
+    df: pd.DataFrame,
+    price_max: float,
+    selected_team: str,
+    search_term: str,
+    players_df: pd.DataFrame,
+) -> pd.DataFrame:
+    """Apply price, team, and search filters to player data."""
+    # Price filter
+    df = df[df["now_cost"] <= price_max]
+
+    # Team filter
+    if selected_team and "team_name" in df.columns:
+        df = df[df["team_name"] == selected_team]
+
+    # Search filter
+    if search_term and search_term.strip():
+        filtered_players = search_players(players_df, search_term)
+        if "web_name" in df.columns and len(filtered_players) > 0:
+            df = df[df["web_name"].isin(filtered_players["web_name"])]
+        elif len(filtered_players) == 0:
+            return pd.DataFrame()
+
+    return df
+
+
+def sort_players(df: pd.DataFrame, sort_by: str, sort_order: str) -> pd.DataFrame:
+    """Sort players by specified column with custom position handling."""
+    if len(df) == 0:
+        return df
+
+    ascending = sort_order == "asc"
+
+    if sort_by not in df.columns:
+        default_col = "web_name" if "web_name" in df.columns else df.columns[0]
+        logger.warning(f"Sort column '{sort_by}' not found, using '{default_col}'")
+        return df.sort_values(by=default_col, ascending=ascending).reset_index(
+            drop=True
+        )
+
+    # Custom position sort
+    if sort_by == "pos_abbr" and "pos_abbr" in df.columns:
+        position_order = {"GKP": 0, "DEF": 1, "MID": 2, "FWD": 3}
+        df["_sort_key"] = df["pos_abbr"].map(position_order)
+        df = df.sort_values(by="_sort_key", ascending=ascending).reset_index(drop=True)
+        df = df.drop(columns=["_sort_key"])
+    else:
+        df = df.sort_values(by=sort_by, ascending=ascending).reset_index(drop=True)
+
+    logger.info(
+        f"Sorting by {sort_by} ({'asc' if ascending else 'desc'}) - {len(df)} results"
+    )
+    return df
+
+
+def paginate(df: pd.DataFrame, page: int, per_page: int = 10) -> tuple:
+    """Calculate pagination and return page of players."""
+    total_players = len(df)
+    total_pages = max(1, (total_players + per_page - 1) // per_page)
+    page = max(1, min(page, total_pages))
+
+    start_idx = (page - 1) * per_page
+    end_idx = start_idx + per_page
+    page_players = df.iloc[start_idx:end_idx].copy()
+    page_players["rank"] = range(start_idx + 1, start_idx + len(page_players) + 1)
+
+    return page_players, total_players, total_pages, page
+
+
+def get_filter_bounds(df: pd.DataFrame) -> tuple:
+    """Extract team list and price bounds for filter controls."""
+    all_teams = (
+        sorted(df["team_name"].dropna().unique().tolist())
+        if "team_name" in df.columns
+        else []
+    )
+
+    if len(df) > 0:
+        price_min = round(float(df["now_cost"].min()), 1)
+        price_max = round(float(df["now_cost"].max()), 1)
+    else:
+        price_min, price_max = 4.0, 15.0
+
+    return all_teams, price_min, price_max
+
+
 @app.route("/")
 def index():
     """Main page displaying player rankings by position."""
     try:
         players_df, history_df, fdr_df, scoring = load_data()
 
-        # Calculate max games available
-        max_games = int(history_df["round"].max()) if len(history_df) > 0 else 38
-        total_rounds = 38
-        remaining_games = total_rounds - max_games
-
-        # Default to 5 games or max if less than 5 available
-        default_games = min(5, max_games)
-
-        # Get query parameters
-        selected_position = request.args.get("position", "", type=str)
-        page = request.args.get("page", 1, type=int)
-        mins_threshold = request.args.get("mins", 70, type=int)
-        time_period = request.args.get("games", default_games, type=int)
-        sort_by = request.args.get("sort", "expected_points", type=str)
-        sort_order = request.args.get("order", "desc", type=str)
-        selected_team = request.args.get("team", "", type=str)
-        price_max = request.args.get("price_max", None, type=float)
-        search_term = request.args.get("search", "", type=str)
-        adjust_difficulty = (
-            request.args.get("adjust_difficulty", "true", type=str) == "true"
+        # Get game metadata and query parameters
+        meta = get_game_metadata(history_df)
+        params = parse_query_params(
+            request, meta["default_games"], meta["remaining_games"]
         )
-        horizon = min(request.args.get("horizon", 5, type=int), remaining_games)
-        per_page = 10
+        position_names = get_position_names()
 
-        position_names = {
-            "GKP": "Goalkeepers",
-            "DEF": "Defenders",
-            "MID": "Midfielders",
-            "FWD": "Forwards",
-        }
-
-        fdr_arg = fdr_df if adjust_difficulty else None
-        horizon_arg = horizon if adjust_difficulty else None
-
-        # Get all players for selected position (or all positions) with mins threshold and time period
-        if selected_position:
-            df = calculations.expected_points_per_90(
-                history_df=history_df,
-                players_df=players_df,
-                position=selected_position,
-                mins_threshold=mins_threshold / 100,
-                time_period=time_period if time_period < max_games else None,
-                fdr_df=fdr_arg,
-                horizon=horizon_arg,
-            )
-        else:
-            # Combine all positions
-            dfs = []
-            for pos in ["GKP", "DEF", "MID", "FWD"]:
-                dfs.append(
-                    calculations.expected_points_per_90(
-                        history_df=history_df,
-                        players_df=players_df,
-                        position=pos,
-                        mins_threshold=mins_threshold / 100,
-                        time_period=time_period if time_period < max_games else None,
-                        fdr_df=fdr_arg,
-                        horizon=horizon_arg,
-                    )
-                )
-            df = pd.concat(dfs, ignore_index=True)
-
+        # Fetch player data
+        df = fetch_player_data(
+            players_df,
+            history_df,
+            fdr_df,
+            params["selected_position"],
+            params["mins_threshold"],
+            params["time_period"],
+            meta["max_games"],
+            params["adjust_difficulty"],
+            params["horizon"],
+        )
         df = format_player_data(df)
 
-        # Derive team list and price bounds from the full position dataset (before filtering)
-        # so the controls always reflect the full range for the current position
-        all_teams = (
-            sorted(df["team_name"].dropna().unique().tolist())
-            if "team_name" in df.columns
-            else []
-        )
-        global_price_min = round(float(df["now_cost"].min()), 1) if len(df) > 0 else 4.0
-        global_price_max = (
-            round(float(df["now_cost"].max()), 1) if len(df) > 0 else 15.0
-        )
+        # Get filter bounds from unfiltered data
+        all_teams, global_price_min, global_price_max = get_filter_bounds(df)
+        price_max = params["price_max"] if params["price_max"] else global_price_max
 
-        # Default price_max to the position maximum if not provided
-        if price_max is None:
-            price_max = global_price_max
-
-        # Get pinned players from session (more reliable than cookies)
+        # Extract and separate pinned players
         pinned_players = session.get("pinned_players", [])
-        pinned_df = pd.DataFrame()
         logger.info(f"Pinned players from session: {pinned_players}")
+        pinned_df, df = extract_pinned_players(df, pinned_players)
 
-        if pinned_players and len(df) > 0:
-            if "web_name" in df.columns:
-                # Extract pinned players
-                pinned_df = df[df["web_name"].isin(pinned_players)].copy()
-                logger.info(
-                    f"Extracted {len(pinned_df)} pinned players: {pinned_df['web_name'].tolist()}"
-                )
-                # Remove them from the main dataset for filtering
-                df = df[~df["web_name"].isin(pinned_players)].copy()
+        # Apply filters to non-pinned players
+        df = apply_filters(
+            df, price_max, params["selected_team"], params["search_term"], players_df
+        )
 
-        # Apply price filter to non-pinned players
-        df = df[df["now_cost"] <= price_max]
-
-        # Apply team filter to non-pinned players
-        if selected_team and "team_name" in df.columns:
-            df = df[df["team_name"] == selected_team]
-
-        # Apply search filter to non-pinned players
-        if search_term and search_term.strip():
-            # Search in the original players_df to get all name fields
-            filtered_players = search_players(players_df, search_term)
-            # Filter df to only include players that match the search
-            if "web_name" in df.columns and len(filtered_players) > 0:
-                df = df[df["web_name"].isin(filtered_players["web_name"])]
-            elif len(filtered_players) == 0:
-                # No search results - return empty DataFrame (keep pinned players)
-                df = pd.DataFrame()
-
-        # Apply sorting to non-pinned players
-        ascending = sort_order == "asc"
-        if len(df) > 0 and sort_by in df.columns:
-            # Custom position sort order: GKP->DEF->MID->FWD instead of alphabetical
-            if sort_by == "pos_abbr" and "pos_abbr" in df.columns:
-                position_order = {"GKP": 0, "DEF": 1, "MID": 2, "FWD": 3}
-                df["_sort_key"] = df["pos_abbr"].map(position_order)
-                df = df.sort_values(by="_sort_key", ascending=ascending).reset_index(
-                    drop=True
-                )
-                df = df.drop(columns=["_sort_key"])
-            else:
-                df = df.sort_values(by=sort_by, ascending=ascending).reset_index(
-                    drop=True
-                )
-            logger.info(
-                f"Sorting by {sort_by} ({'asc' if ascending else 'desc'}) - {len(df)} results"
-            )
-        elif len(df) > 0:
-            # If sort_by column doesn't exist, use a default column that should exist
-            default_sort_col = "web_name" if "web_name" in df.columns else df.columns[0]
-            df = df.sort_values(by=default_sort_col, ascending=ascending).reset_index(
-                drop=True
-            )
-            logger.warning(
-                f"Sort column '{sort_by}' not found, using '{default_sort_col}' instead"
-            )
-        else:
-            logger.info("No results to sort")
-
-        # Sort pinned players and combine with filtered results
+        # Sort and combine
+        df = sort_players(df, params["sort_by"], params["sort_order"])
         if len(pinned_df) > 0:
-            # Sort pinned players by the same criteria
-            if sort_by in pinned_df.columns:
-                # Custom position sort order for pinned players too
-                if sort_by == "pos_abbr" and "pos_abbr" in pinned_df.columns:
-                    position_order = {"GKP": 0, "DEF": 1, "MID": 2, "FWD": 3}
-                    pinned_df["_sort_key"] = pinned_df["pos_abbr"].map(position_order)
-                    pinned_df = pinned_df.sort_values(
-                        by="_sort_key", ascending=ascending
-                    ).reset_index(drop=True)
-                    pinned_df = pinned_df.drop(columns=["_sort_key"])
-                else:
-                    pinned_df = pinned_df.sort_values(
-                        by=sort_by, ascending=ascending
-                    ).reset_index(drop=True)
-            else:
-                pinned_df = pinned_df.sort_values(
-                    by="web_name", ascending=True
-                ).reset_index(drop=True)
-
-            # Combine: pinned players first, then filtered results
+            pinned_df = sort_players(pinned_df, params["sort_by"], params["sort_order"])
             df = pd.concat([pinned_df, df], ignore_index=True)
             logger.info(
                 f"Combined {len(pinned_df)} pinned players with {len(df) - len(pinned_df)} filtered results"
             )
 
-        # Calculate pagination
-        total_players = len(df)
-        total_pages = max(1, (total_players + per_page - 1) // per_page)
-        page = max(1, min(page, total_pages))
+        # Paginate
+        page_players, total_players, total_pages, page = paginate(df, params["page"])
 
-        start_idx = (page - 1) * per_page
-        end_idx = start_idx + per_page
-        page_players = df.iloc[start_idx:end_idx].copy()
-        page_players["rank"] = range(start_idx + 1, start_idx + len(page_players) + 1)
-
+        # Build template context
         position_data = {
-            "name": position_names.get(selected_position, "All Players"),
-            "code": selected_position,
+            "name": position_names.get(params["selected_position"], "All Players"),
+            "code": params["selected_position"],
             "players": page_players.to_dict("records"),
             "total_players": total_players,
             "total_pages": total_pages,
             "current_page": page,
-            "start_rank": start_idx + 1,
-            "end_rank": min(end_idx, total_players),
+            "start_rank": (page - 1) * 10 + 1,
+            "end_rank": min(page * 10, total_players),
         }
 
         return render_template(
             "index.html",
             position_data=position_data,
             all_positions=position_names,
-            selected_position=selected_position,
+            selected_position=params["selected_position"],
             page=page,
-            mins_threshold=mins_threshold,
-            time_period=time_period,
-            max_games=max_games,
-            remaining_games=remaining_games,
-            sort_by=sort_by,
-            sort_order=sort_order,
+            mins_threshold=params["mins_threshold"],
+            time_period=params["time_period"],
+            max_games=meta["max_games"],
+            remaining_games=meta["remaining_games"],
+            sort_by=params["sort_by"],
+            sort_order=params["sort_order"],
             all_teams=all_teams,
-            selected_team=selected_team,
+            selected_team=params["selected_team"],
             price_max=price_max,
             global_price_min=global_price_min,
             global_price_max=global_price_max,
-            adjust_difficulty=adjust_difficulty,
-            horizon=horizon,
-            search_term=search_term,
+            adjust_difficulty=params["adjust_difficulty"],
+            horizon=params["horizon"],
+            search_term=params["search_term"],
         )
 
     except Exception as e:
