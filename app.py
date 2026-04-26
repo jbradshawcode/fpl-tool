@@ -1,7 +1,7 @@
 """Flask web UI entry point for Fantasy Premier League expected points analysis.
 
-This module serves as the minimal entry point. All helper functions and
-route logic are in routes/ to maintain separation of concerns.
+This module serves as the minimal entry point. Route logic in routes/,
+service orchestration in services/, domain logic in domain/.
 """
 
 import os
@@ -13,16 +13,17 @@ from flask import Flask, render_template, request, jsonify, session
 from infrastructure.logger import setup_logger, get_logger
 from routes.utils import (
     open_browser,
-    load_data,
     format_player_data,
     get_game_metadata,
     parse_query_params,
     get_position_names,
-    fetch_player_data,
+)
+from services.data_service import load_fpl_data, fetch_players_for_analysis
+from services.player_service import (
     extract_pinned_players,
-    apply_filters,
-    sort_players,
-    paginate,
+    apply_all_filters,
+    sort_by_column,
+    paginate_results,
     get_filter_bounds,
 )
 
@@ -40,7 +41,7 @@ app.secret_key = "fpl-secret-key-for-sessions"
 def index():
     """Main page displaying player rankings by position."""
     try:
-        players_df, history_df, fdr_df, scoring = load_data()
+        players_df, history_df, fdr_df, scoring = load_fpl_data()
 
         # Get game metadata and query parameters
         meta = get_game_metadata(history_df)
@@ -50,7 +51,7 @@ def index():
         position_names = get_position_names()
 
         # Fetch player data
-        df = fetch_player_data(
+        df = fetch_players_for_analysis(
             players_df,
             history_df,
             fdr_df,
@@ -73,21 +74,25 @@ def index():
         pinned_df, df = extract_pinned_players(df, pinned_players)
 
         # Apply filters to non-pinned players
-        df = apply_filters(
+        df = apply_all_filters(
             df, price_max, params["selected_team"], params["search_term"], players_df
         )
 
         # Sort and combine
-        df = sort_players(df, params["sort_by"], params["sort_order"])
+        df = sort_by_column(df, params["sort_by"], params["sort_order"])
         if len(pinned_df) > 0:
-            pinned_df = sort_players(pinned_df, params["sort_by"], params["sort_order"])
+            pinned_df = sort_by_column(
+                pinned_df, params["sort_by"], params["sort_order"]
+            )
             df = pd.concat([pinned_df, df], ignore_index=True)
             logger.info(
                 f"Combined {len(pinned_df)} pinned players with {len(df) - len(pinned_df)} filtered results"
             )
 
         # Paginate
-        page_players, total_players, total_pages, page = paginate(df, params["page"])
+        page_players, total_players, total_pages, page = paginate_results(
+            df, params["page"]
+        )
 
         # Build template context
         position_data = {
