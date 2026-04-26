@@ -288,7 +288,7 @@ class TestExpectedPointsPer90:
         assert len(result) == 1  # Only element 4 (Forward)
 
     def test_empty_history(self, sample_players_df):
-        """Should handle empty history gracefully."""
-        # Skip this test as the function requires minimum columns to work
-        # This is a design limitation, not a bug
-        pytest.skip("Function requires minimum columns, empty df not supported")
+        """Should raise error on empty history dataframe."""
+        empty_history = pd.DataFrame()
+        with pytest.raises((ValueError, KeyError, IndexError)):
+            expected_points_per_90(empty_history, sample_players_df)
