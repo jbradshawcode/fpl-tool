@@ -15,8 +15,8 @@ from typing import List, Dict
 
 import pandas as pd
 
-from helpers.api import fetch_data
-from fpl import history, preprocessing
+from infrastructure.api_client import fetch_data
+from domain import history, preprocessing
 
 logger = logging.getLogger(__name__)
 

@@ -9,7 +9,7 @@ This module provides a thin wrapper around `requests.get` that:
 
 import requests
 
-from .config import BASE_URL
+from config import BASE_URL
 
 
 def fetch_data(endpoint: str) -> dict:

@@ -8,7 +8,7 @@ This module provides:
 
 import pandas as pd
 
-from helpers.config import SUPPORTED_METRICS, POS_MAP
+from config import SUPPORTED_METRICS, POS_MAP
 
 
 def build_players_df(data: dict) -> tuple[pd.DataFrame, pd.Series]:

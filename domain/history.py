@@ -13,9 +13,9 @@ import pandas as pd
 from typing import List, Dict
 from tqdm import tqdm
 
-from helpers.api import fetch_data
-from helpers.config import POS_MAP, SUPPORTED_HISTORY_METRICS
-from helpers.loading import load_parameters
+from infrastructure.api_client import fetch_data
+from config import POS_MAP, SUPPORTED_HISTORY_METRICS
+from infrastructure.loading import load_parameters
 
 
 def fetch_player_history(element_id: int, team_map: Dict[int, str]) -> pd.DataFrame:
@@ -105,52 +105,30 @@ def fetch_all_histories(
     )
 
 
-def calculate_expected_points(
-    history_df: pd.DataFrame,
-    players_df: pd.DataFrame,
-    scoring: dict,
+def _add_position_info(
+    history_df: pd.DataFrame, players_df: pd.DataFrame
 ) -> pd.DataFrame:
-    """Compute expected points and per-90 metrics for each match entry.
-
-    Parameters
-    ----------
-    history_df : pd.DataFrame
-        Player match-history table containing minutes, goals, xG, xA,
-        defensive actions, and other event data.
-    players_df : pd.DataFrame
-        Player metadata including position and team.
-    scoring : dict
-        FPL scoring rules dict (goals, assists, cards, clean sheets, etc.).
-
-    Returns
-    -------
-    pd.DataFrame
-        Updated DataFrame with:
-        - expected_points
-        - expected_points_per_90
-        - actual_points_per_90
-        - percentage_of_mins_played
-        plus added position and shorthand position codes.
-
-    """
-    if history_df.empty:
-        return history_df
-
-    params = load_parameters()
-
+    """Add position and position abbreviation to history dataframe."""
     history_df["position"] = history_df["element"].map(players_df["position"])
     history_df["pos_abbr"] = history_df["position"].map(POS_MAP)
+    return history_df
 
-    # Play points
-    long_short_points = (
-        history_df["minutes"] >= params["long_play_threshold"]
-    ) * scoring["long_play"] + (
+
+def _calculate_play_points(
+    history_df: pd.DataFrame, params: dict, scoring: dict
+) -> pd.Series:
+    """Calculate appearance points based on minutes played."""
+    return (history_df["minutes"] >= params["long_play_threshold"]) * scoring[
+        "long_play"
+    ] + (
         (history_df["minutes"] > 0)
         & (history_df["minutes"] < params["long_play_threshold"])
     ) * scoring["short_play"]
 
-    # Defensive contribution bonus
-    defensive_contribution_points = np.where(
+
+def _calculate_defensive_points(history_df: pd.DataFrame, params: dict) -> pd.Series:
+    """Calculate defensive contribution bonus points."""
+    return np.where(
         (history_df["pos_abbr"] == "DEF")
         & (history_df["defensive_contribution"] >= params["defcon_threshold"]["def"]),
         2,
@@ -165,44 +143,55 @@ def calculate_expected_points(
         ),
     )
 
-    # Clean sheet probability (exponential model)
+
+def _calculate_clean_sheet_points(
+    history_df: pd.DataFrame, params: dict, scoring: dict
+) -> pd.Series:
+    """Calculate expected clean sheet points using exponential probability model."""
     probability_clean_sheet = np.where(
         history_df["minutes"] >= params["long_play_threshold"],
         np.exp(-history_df["expected_goals_conceded"].astype(float)),
         0,
     )
-    expected_clean_sheet_points = (
-        history_df["pos_abbr"].map(scoring["clean_sheets"]) * probability_clean_sheet
-    )
+    return history_df["pos_abbr"].map(scoring["clean_sheets"]) * probability_clean_sheet
 
-    # Goals conceded penalty: -1 point per 2 goals conceded
-    # Linear mapping: expected penalty = xGC × (-0.5 points)
+
+def _calculate_gc_penalty_points(
+    history_df: pd.DataFrame, params: dict, scoring: dict
+) -> pd.Series:
+    """Calculate expected goals conceded penalty points (-0.5 per xGC)."""
     xgc = history_df["expected_goals_conceded"].astype(float)
-    expected_gc_penalty_points = np.where(
+    return np.where(
         history_df["minutes"] >= params["long_play_threshold"],
-        xgc * history_df["pos_abbr"].map(scoring["goals_conceded"]) / 2,  # xGC × (-0.5)
+        xgc * history_df["pos_abbr"].map(scoring["goals_conceded"]) / 2,
         0,
     )
 
-    # Vectorised expected points calculation
-    history_df["expected_points"] = (
+
+def _calculate_attack_points(history_df: pd.DataFrame, scoring: dict) -> pd.Series:
+    """Calculate points from expected goals and assists."""
+    return (
         history_df["expected_goals"].astype(float)
         * history_df["pos_abbr"].map(scoring["goals_scored"])
         + history_df["expected_assists"].astype(float) * scoring["assists"]
-        + expected_clean_sheet_points
-        + expected_gc_penalty_points  # New probabilistic goals conceded penalty
-        + history_df["own_goals"] * scoring["own_goals"]
+    )
+
+
+def _calculate_event_points(history_df: pd.DataFrame, scoring: dict) -> pd.Series:
+    """Calculate points from actual match events (cards, saves, etc.)."""
+    return (
+        history_df["own_goals"] * scoring["own_goals"]
         + history_df["penalties_saved"] * scoring["penalties_saved"]
         + history_df["penalties_missed"] * scoring["penalties_missed"]
         + history_df["yellow_cards"] * scoring["yellow_cards"]
         + history_df["red_cards"] * scoring["red_cards"]
         + (history_df["saves"] // 3) * scoring["saves"]
         + history_df["bonus"] * scoring["bonus"]
-        + defensive_contribution_points
-        + long_short_points
     )
 
-    # Expected & actual points per 90
+
+def _calculate_per_90_metrics(history_df: pd.DataFrame) -> pd.DataFrame:
+    """Calculate per-90 metrics and percentage of minutes played."""
     history_df["expected_points_per_90"] = np.where(
         history_df["minutes"] != 0,
         np.where(
@@ -224,5 +213,57 @@ def calculate_expected_points(
     )
 
     history_df["percentage_of_mins_played"] = history_df["minutes"] / 90
-
     return history_df
+
+
+def calculate_expected_points(
+    history_df: pd.DataFrame,
+    players_df: pd.DataFrame,
+    scoring: dict,
+) -> pd.DataFrame:
+    """Compute expected points and per-90 metrics for each match entry.
+
+    Parameters
+    ----------
+    history_df : pd.DataFrame
+        Player match-history table containing minutes, goals, xG, xA,
+        defensive actions, and other event data.
+    players_df : pd.DataFrame
+        Player metadata including position and team.
+    scoring : dict
+        FPL scoring rules dict (goals, assists, cards, clean sheets, etc.).
+
+    Returns
+    -------
+    pd.DataFrame
+        Updated DataFrame with expected_points, per-90 metrics,
+        and position information added.
+    """
+    if history_df.empty:
+        return history_df
+
+    params = load_parameters()
+
+    # Add position info
+    history_df = _add_position_info(history_df, players_df)
+
+    # Calculate all scoring components
+    play_points = _calculate_play_points(history_df, params, scoring)
+    defensive_points = _calculate_defensive_points(history_df, params)
+    clean_sheet_points = _calculate_clean_sheet_points(history_df, params, scoring)
+    gc_penalty_points = _calculate_gc_penalty_points(history_df, params, scoring)
+    attack_points = _calculate_attack_points(history_df, scoring)
+    event_points = _calculate_event_points(history_df, scoring)
+
+    # Combine all components
+    history_df["expected_points"] = (
+        attack_points
+        + clean_sheet_points
+        + gc_penalty_points
+        + event_points
+        + defensive_points
+        + play_points
+    )
+
+    # Calculate per-90 metrics
+    return _calculate_per_90_metrics(history_df)
