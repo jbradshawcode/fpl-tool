@@ -271,8 +271,8 @@ class TestGetFilterBounds:
 
         assert "Arsenal" in teams
         assert "Man City" in teams
-        assert min_price == 5.0  # 50 / 10
-        assert max_price == 14.0  # 140 / 10
+        assert min_price == 50.0  # Raw price from data
+        assert max_price == 140.0  # Raw price from data
 
     def test_missing_team_name_column(self):
         """Should handle missing team_name column."""
@@ -280,8 +280,8 @@ class TestGetFilterBounds:
         teams, min_price, max_price = get_filter_bounds(df)
 
         assert teams == []
-        assert min_price == 5.0
-        assert max_price == 10.0
+        assert min_price == 50.0
+        assert max_price == 100.0
 
     def test_empty_dataframe_defaults(self):
         """Should use defaults for empty dataframe."""

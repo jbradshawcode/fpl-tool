@@ -70,6 +70,7 @@ class TestCalculateAttackPoints:
         history = pd.DataFrame(
             {
                 "expected_goals": [1.0, 1.0, 1.0, 1.0],
+                "expected_assists": [0.0, 0.0, 0.0, 0.0],
                 "pos_abbr": ["GKP", "DEF", "MID", "FWD"],
             }
         )
@@ -151,7 +152,7 @@ class TestCalculateGCPenaltyPoints:
         )
 
         # 2.0 xGC * (-1) / 2 = -1.0
-        assert result.iloc[0] == -1.0
+        assert result[0] == -1.0
 
     def test_no_penalty_for_short_play(self, sample_parameters, sample_scoring):
         """Should not penalize players with < 60 minutes."""
@@ -166,7 +167,7 @@ class TestCalculateGCPenaltyPoints:
             history, sample_parameters, sample_scoring
         )
 
-        assert result.iloc[0] == 0
+        assert result[0] == 0
 
 
 class TestCalculateDefensivePoints:
@@ -182,9 +183,9 @@ class TestCalculateDefensivePoints:
         )
         result = _calculate_defensive_points(history, sample_parameters)
 
-        assert result.iloc[0] == 2  # At threshold
-        assert result.iloc[1] == 0  # Below threshold
-        assert result.iloc[2] == 2  # Above threshold
+        assert result[0] == 2  # At threshold
+        assert result[1] == 0  # Below threshold
+        assert result[2] == 2  # Above threshold
 
     def test_non_defender_threshold(self, sample_parameters):
         """Should use higher threshold for non-defenders."""
@@ -196,9 +197,9 @@ class TestCalculateDefensivePoints:
         )
         result = _calculate_defensive_points(history, sample_parameters)
 
-        assert result.iloc[0] == 0  # Below 12
-        assert result.iloc[1] == 2  # At 12
-        assert result.iloc[2] == 2  # Above 12
+        assert result[0] == 0  # Below 12
+        assert result[1] == 2  # At 12
+        assert result[2] == 2  # Above 12
 
 
 class TestCalculateEventPoints:
