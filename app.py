@@ -200,7 +200,18 @@ def index():
         # Apply sorting to non-pinned players
         ascending = sort_order == "asc"
         if len(df) > 0 and sort_by in df.columns:
-            df = df.sort_values(by=sort_by, ascending=ascending).reset_index(drop=True)
+            # Custom position sort order: GKP->DEF->MID->FWD instead of alphabetical
+            if sort_by == "pos_abbr" and "pos_abbr" in df.columns:
+                position_order = {"GKP": 0, "DEF": 1, "MID": 2, "FWD": 3}
+                df["_sort_key"] = df["pos_abbr"].map(position_order)
+                df = df.sort_values(by="_sort_key", ascending=ascending).reset_index(
+                    drop=True
+                )
+                df = df.drop(columns=["_sort_key"])
+            else:
+                df = df.sort_values(by=sort_by, ascending=ascending).reset_index(
+                    drop=True
+                )
             logger.info(
                 f"Sorting by {sort_by} ({'asc' if ascending else 'desc'}) - {len(df)} results"
             )
@@ -220,9 +231,18 @@ def index():
         if len(pinned_df) > 0:
             # Sort pinned players by the same criteria
             if sort_by in pinned_df.columns:
-                pinned_df = pinned_df.sort_values(
-                    by=sort_by, ascending=ascending
-                ).reset_index(drop=True)
+                # Custom position sort order for pinned players too
+                if sort_by == "pos_abbr" and "pos_abbr" in pinned_df.columns:
+                    position_order = {"GKP": 0, "DEF": 1, "MID": 2, "FWD": 3}
+                    pinned_df["_sort_key"] = pinned_df["pos_abbr"].map(position_order)
+                    pinned_df = pinned_df.sort_values(
+                        by="_sort_key", ascending=ascending
+                    ).reset_index(drop=True)
+                    pinned_df = pinned_df.drop(columns=["_sort_key"])
+                else:
+                    pinned_df = pinned_df.sort_values(
+                        by=sort_by, ascending=ascending
+                    ).reset_index(drop=True)
             else:
                 pinned_df = pinned_df.sort_values(
                     by="web_name", ascending=True

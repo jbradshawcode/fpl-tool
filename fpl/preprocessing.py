@@ -8,7 +8,7 @@ This module provides:
 
 import pandas as pd
 
-from helpers.config import SUPPORTED_METRICS
+from helpers.config import SUPPORTED_METRICS, POS_MAP
 
 
 def build_players_df(data: dict) -> tuple[pd.DataFrame, pd.Series]:
@@ -40,6 +40,7 @@ def build_players_df(data: dict) -> tuple[pd.DataFrame, pd.Series]:
 
     positions_map = positions_df.set_index("id")["singular_name"]
     players_df["position"] = players_df["element_type"].map(positions_map)
+    players_df["pos_abbr"] = players_df["position"].map(POS_MAP)
 
     # Keep only supported metrics
     players_df = players_df[SUPPORTED_METRICS]

@@ -50,6 +50,7 @@ SUPPORTED_METRICS = [
     "own_goals",
     "penalties_missed",
     "penalties_saved",
+    "pos_abbr",
     "position",
     "recoveries",
     "red_cards",

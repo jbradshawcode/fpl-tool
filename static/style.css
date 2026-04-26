@@ -369,9 +369,10 @@ td.numeric {
 
 tr:hover { background-color: #f8f9fa; }
 
-.player-name { font-weight: 500; color: #212529; }
-.team-name   { color: #6c757d; font-size: 0.85rem; }
-.rank        { font-weight: 600; color: #667eea; }
+.player-name   { font-weight: 500; color: #212529; }
+.position-code { color: #6c757d; font-size: 0.85rem; }
+.team-name     { color: #6c757d; font-size: 0.85rem; }
+.rank          { font-weight: 600; color: #667eea; }
 
 .no-results {
     text-align: center;

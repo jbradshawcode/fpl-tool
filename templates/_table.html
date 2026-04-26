@@ -18,8 +18,9 @@
                 <tr>
                     <th>Rank</th>
                     {% set cols = [
-                        ('web_name',                  'Player',  false),
-                        ('team_name',                 'Team',    false),
+                        ('web_name',                  'Player',   false),
+                        ('pos_abbr',                  'Position', false),
+                        ('team_name',                 'Team',     false),
                         ('now_cost',                  'Cost',    true),
                         ('percentage_of_mins_played', 'Mins %',  true),
                         ('expected_points',           'xP',      true),
@@ -44,6 +45,7 @@
                 <tr>
                     <td class="rank">{{ player.rank|int }}</td>
                     <td class="player-name">{{ player.web_name }}</td>
+                    <td class="position-code">{{ player.pos_abbr }}</td>
                     <td class="team-name">{{ player.team_name }}</td>
                     <td class="numeric">£{{ "%.1f"|format(player.now_cost) }}m</td>
                     <td class="numeric">{{ "%.2f"|format(player.percentage_of_mins_played) }}%</td>
@@ -55,7 +57,7 @@
                 {% endfor %}
                 {% else %}
                 <tr>
-                    <td colspan="9" class="no-results">No players found matching your filters.</td>
+                    <td colspan="10" class="no-results">No players found matching your filters.</td>
                 </tr>
                 {% endif %}
             </tbody>
