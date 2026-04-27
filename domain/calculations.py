@@ -175,7 +175,9 @@ def _apply_horizon_scaling(
     return grouped
 
 
-def _calculate_per_90_stats(grouped: pd.DataFrame, df: pd.DataFrame) -> pd.DataFrame:
+def _calculate_per_90_stats(
+    grouped: pd.DataFrame, df: pd.DataFrame, players_df: pd.DataFrame
+) -> pd.DataFrame:
     """Calculate per-90 and percentage statistics."""
     safe_minutes = grouped["total_minutes"].replace(0, np.nan)
 
@@ -190,12 +192,66 @@ def _calculate_per_90_stats(grouped: pd.DataFrame, df: pd.DataFrame) -> pd.DataF
     fixtures_per_player = df.groupby("element").size().rename("fixture_count")
     grouped["fixture_count"] = fixtures_per_player.reindex(grouped.index)
 
-    grouped["percentage_of_mins_played"] = (
-        grouped["total_minutes"] / (grouped["fixture_count"] * 90)
-    ).fillna(0)
-    grouped["actual_points"] = (
-        grouped["total_actual_points"] / grouped["fixture_count"]
-    ).fillna(0)
+    # Count only finished fixtures for percentage calculation
+    if "finished" in df.columns:
+        # Filter to only finished fixtures
+        finished_df = df[df["finished"]]
+
+        # Count finished fixtures per player
+        finished_fixtures = (
+            finished_df.groupby("element").size().rename("finished_fixture_count")
+        )
+        grouped["finished_fixture_count"] = finished_fixtures.reindex(
+            grouped.index
+        ).fillna(0)
+
+        # Calculate total minutes and actual points only from finished fixtures
+        finished_minutes = (
+            finished_df.groupby("element")["minutes"]
+            .sum()
+            .rename("finished_total_minutes")
+        )
+        finished_actual_points = (
+            finished_df.groupby("element")["total_points"]
+            .sum()
+            .rename("finished_total_actual_points")
+        )
+
+        grouped["finished_total_minutes"] = finished_minutes.reindex(
+            grouped.index
+        ).fillna(0)
+        grouped["finished_total_actual_points"] = finished_actual_points.reindex(
+            grouped.index
+        ).fillna(0)
+
+        # Use finished fixtures as denominator and finished minutes as numerator
+        safe_finished_fixtures = grouped["finished_fixture_count"].replace(0, 1)
+        grouped["percentage_of_mins_played"] = (
+            grouped["finished_total_minutes"] / (safe_finished_fixtures * 90)
+        ).fillna(0)
+        grouped["actual_points"] = (
+            grouped["finished_total_actual_points"] / safe_finished_fixtures
+        ).fillna(0)
+
+        # Drop intermediate columns
+        grouped = grouped.drop(
+            columns=[
+                "finished_fixture_count",
+                "finished_total_minutes",
+                "finished_total_actual_points",
+            ],
+            errors="ignore",
+        )
+    else:
+        # Fallback to all fixtures if finished column not available
+        safe_fixture_count = grouped["fixture_count"].replace(0, 1)
+        grouped["percentage_of_mins_played"] = (
+            grouped["total_minutes"] / (safe_fixture_count * 90)
+        ).fillna(0)
+        grouped["actual_points"] = (
+            grouped["total_actual_points"] / safe_fixture_count
+        ).fillna(0)
+
     grouped["expected_points"] = (
         grouped["expected_points_per_90"] * grouped["percentage_of_mins_played"]
     ).fillna(0)
@@ -284,7 +340,7 @@ def expected_points_per_90(
     )
 
     # Calculate per-90 stats
-    grouped = _calculate_per_90_stats(grouped, df)
+    grouped = _calculate_per_90_stats(grouped, df, players_df)
 
     # Apply filters and merge
     grouped = _apply_minutes_filter(grouped, mins_threshold)

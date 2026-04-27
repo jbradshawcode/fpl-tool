@@ -12,6 +12,9 @@ BASE_URL = "https://fantasy.premierleague.com/api/"
 # Bootstrap Static Endpoint
 BOOTSTRAP_STATIC_ENDPOINT = "bootstrap-static/"
 
+# Fixtures Endpoint
+FIXTURES_ENDPOINT = "fixtures/"
+
 # Positions Mapping
 POS_MAP = {
     "Goalkeeper": "GKP",

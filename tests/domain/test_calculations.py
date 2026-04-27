@@ -292,3 +292,187 @@ class TestExpectedPointsPer90:
         empty_history = pd.DataFrame()
         with pytest.raises((ValueError, KeyError, IndexError)):
             expected_points_per_90(empty_history, sample_players_df)
+
+
+class TestFixtureFiltering:
+    """Tests for fixture finished status filtering."""
+
+    def test_double_gameweek_both_finished(self):
+        """Should count both fixtures in double gameweek when both finished."""
+        from domain.calculations import _calculate_per_90_stats
+
+        # Player with double gameweek in round 30, both finished
+        history_df = pd.DataFrame(
+            {
+                "element": [1, 1, 1, 1],
+                "round": [30, 30, 31, 32],
+                "minutes": [90, 90, 90, 90],
+                "total_points": [6, 6, 6, 6],
+                "finished": [True, True, True, True],
+            }
+        )
+        players_df = pd.DataFrame({"team": [1]}, index=[1])
+
+        grouped = pd.DataFrame(
+            {
+                "element": [1],
+                "total_minutes": [360],
+                "total_actual_points": [24],
+                "total_expected_points": [24],
+                "scale": [1.0],
+            }
+        ).set_index("element")
+
+        result = _calculate_per_90_stats(grouped, history_df, players_df)
+
+        assert result.loc[1, "percentage_of_mins_played"] == 1.0  # 360 / (4 * 90)
+
+    def test_double_gameweek_one_finished(self):
+        """Should only count finished fixture when one of two is not finished."""
+        from domain.calculations import _calculate_per_90_stats
+
+        # Player with double gameweek in round 30, one finished one not
+        history_df = pd.DataFrame(
+            {
+                "element": [1, 1, 1, 1],
+                "round": [30, 30, 31, 32],
+                "minutes": [90, 90, 90, 90],
+                "total_points": [6, 6, 6, 6],
+                "finished": [True, False, True, True],
+            }
+        )
+        players_df = pd.DataFrame({"team": [1]}, index=[1])
+
+        grouped = pd.DataFrame(
+            {
+                "element": [1],
+                "total_minutes": [360],
+                "total_actual_points": [24],
+                "total_expected_points": [24],
+                "scale": [1.0],
+            }
+        ).set_index("element")
+
+        result = _calculate_per_90_stats(grouped, history_df, players_df)
+
+        assert result.loc[1, "percentage_of_mins_played"] == 1.0  # 270 / (3 * 90)
+
+    def test_blank_gameweek(self):
+        """Should handle blank gameweek (no fixture in a round)."""
+        from domain.calculations import _calculate_per_90_stats
+
+        # Player with no fixture in round 31 (blank gameweek)
+        history_df = pd.DataFrame(
+            {
+                "element": [1, 1, 1],
+                "round": [30, 32, 33],
+                "minutes": [90, 90, 90],
+                "total_points": [6, 6, 6],
+                "finished": [True, True, True],
+            }
+        )
+        players_df = pd.DataFrame({"team": [1]}, index=[1])
+
+        grouped = pd.DataFrame(
+            {
+                "element": [1],
+                "total_minutes": [270],
+                "total_actual_points": [18],
+                "total_expected_points": [18],
+                "scale": [1.0],
+            }
+        ).set_index("element")
+
+        result = _calculate_per_90_stats(grouped, history_df, players_df)
+
+        assert result.loc[1, "percentage_of_mins_played"] == 1.0  # 270 / (3 * 90)
+
+    def test_games_not_started(self):
+        """Should exclude games not started (finished=False) from calculation."""
+        from domain.calculations import _calculate_per_90_stats
+
+        # Player with 5 fixtures, but round 34 not started
+        history_df = pd.DataFrame(
+            {
+                "element": [1, 1, 1, 1, 1],
+                "round": [30, 31, 32, 33, 34],
+                "minutes": [90, 90, 90, 90, 0],
+                "total_points": [6, 6, 6, 6, 0],
+                "finished": [True, True, True, True, False],
+            }
+        )
+        players_df = pd.DataFrame({"team": [1]}, index=[1])
+
+        grouped = pd.DataFrame(
+            {
+                "element": [1],
+                "total_minutes": [360],
+                "total_actual_points": [24],
+                "total_expected_points": [24],
+                "scale": [1.0],
+            }
+        ).set_index("element")
+
+        result = _calculate_per_90_stats(grouped, history_df, players_df)
+
+        assert result.loc[1, "percentage_of_mins_played"] == 1.0  # 360 / (4 * 90)
+
+    def test_fallback_without_finished_column(self):
+        """Should fall back to all fixtures when finished column is missing."""
+        from domain.calculations import _calculate_per_90_stats
+
+        # History without finished column (old data)
+        history_df = pd.DataFrame(
+            {
+                "element": [1, 1, 1, 1],
+                "round": [30, 31, 32, 33],
+                "minutes": [90, 90, 90, 90],
+                "total_points": [6, 6, 6, 6],
+            }
+        )
+        players_df = pd.DataFrame({"team": [1]}, index=[1])
+
+        grouped = pd.DataFrame(
+            {
+                "element": [1],
+                "total_minutes": [360],
+                "total_actual_points": [24],
+                "total_expected_points": [24],
+                "scale": [1.0],
+            }
+        ).set_index("element")
+
+        result = _calculate_per_90_stats(grouped, history_df, players_df)
+
+        assert result.loc[1, "percentage_of_mins_played"] == 1.0  # 360 / (4 * 90)
+
+    def test_all_fixtures_unfinished(self):
+        """Should handle case where all fixtures are unfinished gracefully."""
+        from domain.calculations import _calculate_per_90_stats
+
+        # All fixtures not finished
+        history_df = pd.DataFrame(
+            {
+                "element": [1, 1],
+                "round": [30, 31],
+                "minutes": [0, 0],
+                "total_points": [0, 0],
+                "finished": [False, False],
+            }
+        )
+        players_df = pd.DataFrame({"team": [1]}, index=[1])
+
+        grouped = pd.DataFrame(
+            {
+                "element": [1],
+                "total_minutes": [0],
+                "total_actual_points": [0],
+                "total_expected_points": [0],
+                "scale": [1.0],
+            }
+        ).set_index("element")
+
+        result = _calculate_per_90_stats(grouped, history_df, players_df)
+
+        # Should not crash, percentage should be 0
+        assert result.loc[1, "percentage_of_mins_played"] == 0.0

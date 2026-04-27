@@ -129,6 +129,61 @@ def _merge_fixture_difficulty(
     return history_df
 
 
+def _merge_fixture_status(
+    history_df: pd.DataFrame, fixtures_df: pd.DataFrame, players_df: pd.DataFrame
+) -> pd.DataFrame:
+    """Merge fixture finished status into player history.
+
+    Parameters
+    ----------
+    history_df : pd.DataFrame
+        Player match-history table (element, round, opponent_team_name, ...).
+    fixtures_df : pd.DataFrame
+        Full fixtures data from FPL API with finished status.
+    players_df : pd.DataFrame
+        Player metadata; used to look up each player's team ID.
+
+    Returns
+    -------
+    pd.DataFrame
+        history_df with fixture_finished column appended.
+
+    """
+    # Add team_id to history_df from players_df
+    element_to_team = players_df["team"]
+    history_df = history_df.copy()
+    history_df["_team_id"] = history_df["element"].map(element_to_team)
+
+    # Create a mapping of (team, round) -> finished status
+    fixtures_df = fixtures_df[["id", "event", "team_h", "team_a", "finished"]].copy()
+    fixtures_df = fixtures_df.rename(columns={"event": "round"})
+
+    # Create home and away team mappings
+    home_finished = fixtures_df[["round", "team_h", "finished"]].rename(
+        columns={"team_h": "team"}
+    )
+    away_finished = fixtures_df[["round", "team_a", "finished"]].rename(
+        columns={"team_a": "team"}
+    )
+
+    # Combine home and away
+    all_finished = pd.concat([home_finished, away_finished], ignore_index=True)
+    all_finished = all_finished.drop_duplicates(subset=["round", "team"])
+
+    # Merge finished status
+    history_df = history_df.merge(
+        all_finished,
+        left_on=["round", "_team_id"],
+        right_on=["round", "team"],
+        how="left",
+    ).drop(columns=["_team_id", "team"])
+
+    # Fill missing finished values with False (assume not finished if not found)
+    history_df["finished"] = history_df["finished"].fillna(False)
+
+    return history_df
+
+
 def retrieve_data(endpoint: str) -> dict:
     """Retrieve FPL data and build DataFrames without saving to disk."""
     try:
@@ -146,8 +201,12 @@ def retrieve_data(endpoint: str) -> dict:
 
     logger.info("Fetching fixtures and merging difficulty ratings...")
     fixtures = fetch_data("fixtures/")
+    fixtures_df = pd.DataFrame(fixtures)
     fdr_df = _build_fixture_difficulty_map(fixtures)
     history_df = _merge_fixture_difficulty(history_df, players_df, fdr_df)
+
+    # Merge fixture finished status into history_df
+    history_df = _merge_fixture_status(history_df, fixtures_df, players_df)
 
     scoring = data["game_config"]["scoring"]
 
@@ -160,7 +219,7 @@ def retrieve_data(endpoint: str) -> dict:
 
 
 def save_data(data: dict) -> None:
-    """Save player, history, fdr, and scoring data to local files."""
+    """Save player, history, fdr, fixtures, and scoring data to local files."""
     required_keys = ["players_df", "history_df", "fdr_df", "scoring"]
     missing_keys = [key for key in required_keys if key not in data]
     if missing_keys:
@@ -175,6 +234,10 @@ def save_data(data: dict) -> None:
         )
         data["history_df"].to_csv(f"{data_dir}/player_histories.csv", index=False)
         data["fdr_df"].to_csv(f"{data_dir}/fixture_difficulty_ratings.csv", index=False)
+
+        # Save fixtures if present (used for finished status merge)
+        if "fixtures_df" in data:
+            data["fixtures_df"].to_csv(f"{data_dir}/fixtures.csv", index=False)
 
         with open(f"{data_dir}/scoring.json", "w") as f:
             json.dump(data["scoring"], f, indent=4)
