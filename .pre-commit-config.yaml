@@ -12,3 +12,10 @@ repos:
         entry: uv run ruff check .
         language: system
         files: \.py$
+
+      - id: pytest
+        name: pytest
+        entry: uv run pytest
+        language: system
+        files: \.py$
+        pass_filenames: false

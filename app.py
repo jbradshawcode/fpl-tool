@@ -41,7 +41,7 @@ app.secret_key = "fpl-secret-key-for-sessions"
 def index():
     """Main page displaying player rankings by position."""
     try:
-        players_df, history_df, fdr_df, scoring = load_fpl_data()
+        players_df, history_df, fdr_df = load_fpl_data()
 
         # Get game metadata and query parameters
         meta = get_game_metadata(history_df)

@@ -236,10 +236,6 @@ def save_data(data: dict) -> None:
         data["history_df"].to_csv(f"{data_dir}/player_histories.csv", index=False)
         data["fdr_df"].to_csv(f"{data_dir}/fixture_difficulty_ratings.csv", index=False)
 
-        # Save fixtures if present (used for finished status merge)
-        if "fixtures_df" in data:
-            data["fixtures_df"].to_csv(f"{data_dir}/fixtures.csv", index=False)
-
         with open(f"{data_dir}/scoring.json", "w") as f:
             json.dump(data["scoring"], f, indent=4)
     except Exception as e:

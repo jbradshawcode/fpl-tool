@@ -19,11 +19,11 @@ from infrastructure.update_guard import mark_updated, should_update
 logger = get_logger(__name__)
 
 
-def load_fpl_data() -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, dict]:
+def load_fpl_data() -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Load and prepare FPL data with expected points calculated.
 
     Returns:
-        Tuple of (players_df, history_df, fdr_df, scoring)
+        Tuple of (players_df, history_df, fdr_df)
     """
     if should_update():
         data = initialise_data(endpoint=BOOTSTRAP_STATIC_ENDPOINT)
@@ -53,7 +53,7 @@ def load_fpl_data() -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, dict]:
         scoring=scoring,
     )
 
-    return players_df, history_df, fdr_df, scoring
+    return players_df, history_df, fdr_df
 
 
 def fetch_players_for_analysis(
