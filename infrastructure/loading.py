@@ -226,17 +226,21 @@ def save_data(data: dict) -> None:
     if missing_keys:
         raise ValueError(f"Missing required keys in data dict: {missing_keys}")
 
-    data_dir = "data"
-    os.makedirs(data_dir, exist_ok=True)
+    # Create subdirectories
+    os.makedirs("data/players", exist_ok=True)
+    os.makedirs("data/fixtures", exist_ok=True)
+    os.makedirs("data/rules", exist_ok=True)
 
     try:
         data["players_df"].to_csv(
-            f"{data_dir}/players_data.csv", index=True, index_label="id"
+            "data/players/players_data.csv", index=True, index_label="id"
         )
-        data["history_df"].to_csv(f"{data_dir}/player_histories.csv", index=False)
-        data["fdr_df"].to_csv(f"{data_dir}/fixture_difficulty_ratings.csv", index=False)
+        data["history_df"].to_csv("data/players/player_histories.csv", index=False)
+        data["fdr_df"].to_csv(
+            "data/fixtures/fixture_difficulty_ratings.csv", index=False
+        )
 
-        with open(f"{data_dir}/scoring.json", "w") as f:
+        with open("data/rules/scoring.json", "w") as f:
             json.dump(data["scoring"], f, indent=4)
     except Exception as e:
         logger.error(f"Failed to save data: {e}")
@@ -246,10 +250,10 @@ def save_data(data: dict) -> None:
 def load_parameters() -> dict:
     """Load and return parameters from the parameters.json file."""
     try:
-        with open("data/parameters.json") as f:
+        with open("data/rules/parameters.json") as f:
             return json.load(f)
     except FileNotFoundError:
-        logger.error("Parameters file not found at data/parameters.json")
+        logger.error("Parameters file not found at data/rules/parameters.json")
         raise
     except json.JSONDecodeError as e:
         logger.error(f"Invalid JSON in parameters file: {e}")

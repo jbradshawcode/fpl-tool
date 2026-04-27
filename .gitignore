@@ -1,9 +1,9 @@
 # Auto-generated data files
-data/player_histories.csv
-data/players_data.csv
-data/fixture_difficulty_ratings.csv
+data/players/player_histories.csv
+data/players/players_data.csv
+data/fixtures/fixture_difficulty_ratings.csv
+data/rules/scoring.json
 data/last_update.txt
-data/scoring.json
 
 # Virtual environments
 .venv/

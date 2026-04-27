@@ -36,14 +36,14 @@ def load_fpl_data() -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
         mark_updated()
     else:
         logger.info("Loading data from local files...")
-        players_df = pd.read_csv("data/players_data.csv", index_col="id")
-        history_df = pd.read_csv("data/player_histories.csv")
-        fdr_df = pd.read_csv("data/fixture_difficulty_ratings.csv")
+        players_df = pd.read_csv("data/players/players_data.csv", index_col="id")
+        history_df = pd.read_csv("data/players/player_histories.csv")
+        fdr_df = pd.read_csv("data/fixtures/fixture_difficulty_ratings.csv")
         fdr_df["round"] = fdr_df["round"].astype(int)
         fdr_df["team_id"] = fdr_df["team_id"].astype(int)
         fdr_df["fixture_difficulty"] = fdr_df["fixture_difficulty"].astype(int)
 
-        with open("data/scoring.json") as f:
+        with open("data/rules/scoring.json") as f:
             scoring = json.load(f)
 
     # Calculate expected points (domain logic)
