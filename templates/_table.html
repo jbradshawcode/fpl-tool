@@ -47,7 +47,7 @@
                     <td class="player-name">
                         {{ player.web_name }}
                         {% if player.games_mismatch or (player.status and player.status != 'a') %}
-                        <span class="warning-icon" title="{{ generate_tooltip(player) }}">⚠️</span>
+                        <span class="warning-icon" data-tooltip="{{ generate_tooltip(player) }}">⚠️</span>
                         {% endif %}
                     </td>
                     <td class="position-code">{{ player.pos_abbr }}</td>

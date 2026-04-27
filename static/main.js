@@ -3,6 +3,7 @@
 import { toggleFutureWindow, updateLabel, updateGamesLabel, scheduleApply, scheduleSearch } from './filters.js';
 import { setFPLConfig, buildParams, applyFilters, sortTable } from './navigation.js';
 import { initPinFunctionality } from './pinning.js';
+import { initTooltips } from './tooltip.js';
 
 (function () {
     'use strict';
@@ -34,4 +35,7 @@ import { initPinFunctionality } from './pinning.js';
 
     // Initialize pin functionality on page load
     initPinFunctionality();
-}());
+    
+    // Initialize tooltips
+    initTooltips();
+})();
