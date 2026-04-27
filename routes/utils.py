@@ -96,8 +96,8 @@ def generate_tooltip(player: dict) -> str:
     # Add games mismatch info if applicable
     if player.get("games_mismatch"):
         team_name = player.get("team_name", "Team")
-        games_played = player.get("games_played", 0)
-        recency_period = player.get("recency_period", 5)
+        games_played = int(player.get("games_played", 0))
+        recency_period = int(player.get("recency_period", 5))
         parts.append(
             f"⚽ {team_name} have played {games_played} games in {recency_period}-game recency period"
         )

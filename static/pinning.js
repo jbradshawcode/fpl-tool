@@ -97,12 +97,10 @@ export function closeContextMenu() {
 }
 
 export function getCleanPlayerName(playerNameCell) {
-    // Remove pin icon if present to get clean name
-    const pinIcon = playerNameCell.querySelector('.pin-icon');
-    if (pinIcon) {
-        return playerNameCell.textContent.replace('📌 ', '').trim();
-    }
-    return playerNameCell.textContent.trim();
+    // Remove both pin and warning icons if present to get clean name
+    let text = playerNameCell.textContent;
+    text = text.replace('📌 ', '').replace('⚠️', '').trim();
+    return text;
 }
 
 export function initPinFunctionality() {
