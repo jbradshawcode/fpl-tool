@@ -47,7 +47,7 @@
                     <td class="player-name">
                         {{ player.web_name }}
                         {% if player.games_mismatch or (player.status and player.status != 'a') %}
-                        <span class="warning-icon" title="{% if player.news %}🏥 {{ player.news }}&#10;{% endif %}⚽ {{ player.team_name }} have played {{ player.games_played|int }} games in {{ player.recency_period|int }}-game recency period">⚠️</span>
+                        <span class="warning-icon" title="{% if player.status and player.status != 'a' and player.news and player.news != 'nan' and player.news != '' %}🏥 {{ player.news }}&#10;{% endif %}⚽ {{ player.team_name }} have played {{ player.games_played|int }} games in {{ player.recency_period|int }}-game recency period">⚠️</span>
                         {% endif %}
                     </td>
                     <td class="position-code">{{ player.pos_abbr }}</td>
