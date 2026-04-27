@@ -311,7 +311,6 @@ class TestFixtureFiltering:
                 "finished": [True, True, True, True],
             }
         )
-        players_df = pd.DataFrame({"team": [1]}, index=[1])
 
         grouped = pd.DataFrame(
             {
@@ -323,7 +322,7 @@ class TestFixtureFiltering:
             }
         ).set_index("element")
 
-        result = _calculate_per_90_stats(grouped, history_df, players_df)
+        result = _calculate_per_90_stats(grouped, history_df)
 
         assert result.loc[1, "percentage_of_mins_played"] == 1.0  # 360 / (4 * 90)
 
@@ -341,7 +340,6 @@ class TestFixtureFiltering:
                 "finished": [True, False, True, True],
             }
         )
-        players_df = pd.DataFrame({"team": [1]}, index=[1])
 
         grouped = pd.DataFrame(
             {
@@ -353,7 +351,7 @@ class TestFixtureFiltering:
             }
         ).set_index("element")
 
-        result = _calculate_per_90_stats(grouped, history_df, players_df)
+        result = _calculate_per_90_stats(grouped, history_df)
 
         assert result.loc[1, "percentage_of_mins_played"] == 1.0  # 270 / (3 * 90)
 
@@ -371,7 +369,6 @@ class TestFixtureFiltering:
                 "finished": [True, True, True],
             }
         )
-        players_df = pd.DataFrame({"team": [1]}, index=[1])
 
         grouped = pd.DataFrame(
             {
@@ -383,7 +380,7 @@ class TestFixtureFiltering:
             }
         ).set_index("element")
 
-        result = _calculate_per_90_stats(grouped, history_df, players_df)
+        result = _calculate_per_90_stats(grouped, history_df)
 
         assert result.loc[1, "percentage_of_mins_played"] == 1.0  # 270 / (3 * 90)
 
@@ -401,7 +398,6 @@ class TestFixtureFiltering:
                 "finished": [True, True, True, True, False],
             }
         )
-        players_df = pd.DataFrame({"team": [1]}, index=[1])
 
         grouped = pd.DataFrame(
             {
@@ -413,7 +409,7 @@ class TestFixtureFiltering:
             }
         ).set_index("element")
 
-        result = _calculate_per_90_stats(grouped, history_df, players_df)
+        result = _calculate_per_90_stats(grouped, history_df)
 
         assert result.loc[1, "percentage_of_mins_played"] == 1.0  # 360 / (4 * 90)
 
@@ -430,7 +426,6 @@ class TestFixtureFiltering:
                 "total_points": [6, 6, 6, 6],
             }
         )
-        players_df = pd.DataFrame({"team": [1]}, index=[1])
 
         grouped = pd.DataFrame(
             {
@@ -442,7 +437,7 @@ class TestFixtureFiltering:
             }
         ).set_index("element")
 
-        result = _calculate_per_90_stats(grouped, history_df, players_df)
+        result = _calculate_per_90_stats(grouped, history_df)
 
         assert result.loc[1, "percentage_of_mins_played"] == 1.0  # 360 / (4 * 90)
 
@@ -460,7 +455,6 @@ class TestFixtureFiltering:
                 "finished": [False, False],
             }
         )
-        players_df = pd.DataFrame({"team": [1]}, index=[1])
 
         grouped = pd.DataFrame(
             {
@@ -472,7 +466,7 @@ class TestFixtureFiltering:
             }
         ).set_index("element")
 
-        result = _calculate_per_90_stats(grouped, history_df, players_df)
+        result = _calculate_per_90_stats(grouped, history_df)
 
         # Should not crash, percentage should be 0
         assert result.loc[1, "percentage_of_mins_played"] == 0.0

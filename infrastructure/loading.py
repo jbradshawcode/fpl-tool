@@ -16,6 +16,7 @@ from typing import List, Dict
 import pandas as pd
 
 from infrastructure.api_client import fetch_data
+from config import FIXTURES_ENDPOINT
 from domain import history, preprocessing
 
 logger = logging.getLogger(__name__)
@@ -200,7 +201,7 @@ def retrieve_data(endpoint: str) -> dict:
     history_df = history.fetch_all_histories(players_df.index.tolist(), team_map)
 
     logger.info("Fetching fixtures and merging difficulty ratings...")
-    fixtures = fetch_data("fixtures/")
+    fixtures = fetch_data(FIXTURES_ENDPOINT)
     fixtures_df = pd.DataFrame(fixtures)
     fdr_df = _build_fixture_difficulty_map(fixtures)
     history_df = _merge_fixture_difficulty(history_df, players_df, fdr_df)
@@ -219,7 +220,7 @@ def retrieve_data(endpoint: str) -> dict:
 
 
 def save_data(data: dict) -> None:
-    """Save player, history, fdr, fixtures, and scoring data to local files."""
+    """Save player, history, fdr, and scoring data to local files."""
     required_keys = ["players_df", "history_df", "fdr_df", "scoring"]
     missing_keys = [key for key in required_keys if key not in data]
     if missing_keys:

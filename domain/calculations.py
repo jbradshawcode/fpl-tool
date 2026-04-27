@@ -175,9 +175,7 @@ def _apply_horizon_scaling(
     return grouped
 
 
-def _calculate_per_90_stats(
-    grouped: pd.DataFrame, df: pd.DataFrame, players_df: pd.DataFrame
-) -> pd.DataFrame:
+def _calculate_per_90_stats(grouped: pd.DataFrame, df: pd.DataFrame) -> pd.DataFrame:
     """Calculate per-90 and percentage statistics."""
     safe_minutes = grouped["total_minutes"].replace(0, np.nan)
 
@@ -340,7 +338,7 @@ def expected_points_per_90(
     )
 
     # Calculate per-90 stats
-    grouped = _calculate_per_90_stats(grouped, df, players_df)
+    grouped = _calculate_per_90_stats(grouped, df)
 
     # Apply filters and merge
     grouped = _apply_minutes_filter(grouped, mins_threshold)
