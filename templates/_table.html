@@ -44,7 +44,12 @@
                 {% for player in position_data.players %}
                 <tr>
                     <td class="rank">{{ player.rank|int }}</td>
-                    <td class="player-name">{{ player.web_name }}</td>
+                    <td class="player-name">
+                        {{ player.web_name }}
+                        {% if player.games_mismatch %}
+                        <span class="warning-icon" title="{{ player.team_name }} have played {{ player.games_played|int }} games in {{ player.recency_period|int }}-game recency period">⚠️</span>
+                        {% endif %}
+                    </td>
                     <td class="position-code">{{ player.pos_abbr }}</td>
                     <td class="team-name">{{ player.team_name }}</td>
                     <td class="numeric">£{{ "%.1f"|format(player.now_cost) }}m</td>

@@ -175,7 +175,9 @@ def _apply_horizon_scaling(
     return grouped
 
 
-def _calculate_per_90_stats(grouped: pd.DataFrame, df: pd.DataFrame) -> pd.DataFrame:
+def _calculate_per_90_stats(
+    grouped: pd.DataFrame, df: pd.DataFrame, time_period: Optional[int] = None
+) -> pd.DataFrame:
     """Calculate per-90 and percentage statistics."""
     safe_minutes = grouped["total_minutes"].replace(0, np.nan)
 
@@ -222,24 +224,14 @@ def _calculate_per_90_stats(grouped: pd.DataFrame, df: pd.DataFrame) -> pd.DataF
             grouped.index
         ).fillna(0)
 
-        # Use finished fixtures as denominator and finished minutes as numerator
-        safe_finished_fixtures = grouped["finished_fixture_count"].replace(0, 1)
+        # Calculate percentage based on finished fixtures only
+        safe_fixture_count = grouped["finished_fixture_count"].replace(0, 1)
         grouped["percentage_of_mins_played"] = (
-            grouped["finished_total_minutes"] / (safe_finished_fixtures * 90)
+            grouped["finished_total_minutes"] / (safe_fixture_count * 90)
         ).fillna(0)
         grouped["actual_points"] = (
-            grouped["finished_total_actual_points"] / safe_finished_fixtures
+            grouped["finished_total_actual_points"] / safe_fixture_count
         ).fillna(0)
-
-        # Drop intermediate columns
-        grouped = grouped.drop(
-            columns=[
-                "finished_fixture_count",
-                "finished_total_minutes",
-                "finished_total_actual_points",
-            ],
-            errors="ignore",
-        )
     else:
         # Fallback to all fixtures if finished column not available
         safe_fixture_count = grouped["fixture_count"].replace(0, 1)
@@ -253,6 +245,12 @@ def _calculate_per_90_stats(grouped: pd.DataFrame, df: pd.DataFrame) -> pd.DataF
     grouped["expected_points"] = (
         grouped["expected_points_per_90"] * grouped["percentage_of_mins_played"]
     ).fillna(0)
+
+    # Add warning flag if games played != recency period (any mismatch)
+    if time_period is not None and "finished_fixture_count" in grouped.columns:
+        grouped["games_played"] = grouped["finished_fixture_count"]
+        grouped["recency_period"] = time_period
+        grouped["games_mismatch"] = grouped["finished_fixture_count"] != time_period
 
     return grouped
 
@@ -268,7 +266,7 @@ def _apply_minutes_filter(
 
 def _merge_and_rank(grouped: pd.DataFrame, players_df: pd.DataFrame) -> pd.DataFrame:
     """Merge with player metadata and rank by expected points."""
-    # Drop intermediate columns
+    # Drop intermediate columns but keep warning flag columns
     grouped = grouped.drop(
         columns=[
             "total_expected_points",
@@ -338,7 +336,7 @@ def expected_points_per_90(
     )
 
     # Calculate per-90 stats
-    grouped = _calculate_per_90_stats(grouped, df)
+    grouped = _calculate_per_90_stats(grouped, df, time_period)
 
     # Apply filters and merge
     grouped = _apply_minutes_filter(grouped, mins_threshold)

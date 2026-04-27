@@ -322,7 +322,7 @@ class TestFixtureFiltering:
             }
         ).set_index("element")
 
-        result = _calculate_per_90_stats(grouped, history_df)
+        result = _calculate_per_90_stats(grouped, history_df, time_period=5)
 
         assert result.loc[1, "percentage_of_mins_played"] == 1.0  # 360 / (4 * 90)
 
@@ -351,7 +351,7 @@ class TestFixtureFiltering:
             }
         ).set_index("element")
 
-        result = _calculate_per_90_stats(grouped, history_df)
+        result = _calculate_per_90_stats(grouped, history_df, time_period=5)
 
         assert result.loc[1, "percentage_of_mins_played"] == 1.0  # 270 / (3 * 90)
 
@@ -380,7 +380,7 @@ class TestFixtureFiltering:
             }
         ).set_index("element")
 
-        result = _calculate_per_90_stats(grouped, history_df)
+        result = _calculate_per_90_stats(grouped, history_df, time_period=5)
 
         assert result.loc[1, "percentage_of_mins_played"] == 1.0  # 270 / (3 * 90)
 
@@ -409,7 +409,7 @@ class TestFixtureFiltering:
             }
         ).set_index("element")
 
-        result = _calculate_per_90_stats(grouped, history_df)
+        result = _calculate_per_90_stats(grouped, history_df, time_period=5)
 
         assert result.loc[1, "percentage_of_mins_played"] == 1.0  # 360 / (4 * 90)
 
@@ -437,7 +437,7 @@ class TestFixtureFiltering:
             }
         ).set_index("element")
 
-        result = _calculate_per_90_stats(grouped, history_df)
+        result = _calculate_per_90_stats(grouped, history_df, time_period=5)
 
         assert result.loc[1, "percentage_of_mins_played"] == 1.0  # 360 / (4 * 90)
 
@@ -466,7 +466,7 @@ class TestFixtureFiltering:
             }
         ).set_index("element")
 
-        result = _calculate_per_90_stats(grouped, history_df)
+        result = _calculate_per_90_stats(grouped, history_df, time_period=5)
 
         # Should not crash, percentage should be 0
         assert result.loc[1, "percentage_of_mins_played"] == 0.0
