@@ -70,3 +70,36 @@ def get_position_names() -> dict:
         "MID": "Midfielders",
         "FWD": "Forwards",
     }
+
+
+def generate_tooltip(player: dict) -> str:
+    """Generate tooltip text for a player with injury and games mismatch info.
+
+    Parameters
+    ----------
+    player : dict
+        Player data dictionary containing news, status, games_mismatch, etc.
+
+    Returns
+    -------
+    str
+        Formatted tooltip text with injury info (if any) and games mismatch info.
+    """
+    parts = []
+
+    # Add injury info if player has injury status and news
+    status = player.get("status")
+    news = player.get("news")
+    if status and status != "a" and news and news != "nan" and news != "":
+        parts.append(f"🏥 {news}")
+
+    # Add games mismatch info if applicable
+    if player.get("games_mismatch"):
+        team_name = player.get("team_name", "Team")
+        games_played = player.get("games_played", 0)
+        recency_period = player.get("recency_period", 5)
+        parts.append(
+            f"⚽ {team_name} have played {games_played} games in {recency_period}-game recency period"
+        )
+
+    return "\n".join(parts)

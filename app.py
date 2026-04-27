@@ -17,6 +17,7 @@ from routes.utils import (
     get_game_metadata,
     parse_query_params,
     get_position_names,
+    generate_tooltip,
 )
 from services.data_service import load_fpl_data, fetch_players_for_analysis
 from services.player_service import (
@@ -126,6 +127,7 @@ def index():
             adjust_difficulty=params["adjust_difficulty"],
             horizon=params["horizon"],
             search_term=params["search_term"],
+            generate_tooltip=generate_tooltip,
         )
 
     except Exception as e:
