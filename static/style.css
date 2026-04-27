@@ -63,7 +63,7 @@ h1 {
 }
 
 .search-input::placeholder {
-    color: #6c757d;
+    color: #999;
     font-style: italic;
 }
 

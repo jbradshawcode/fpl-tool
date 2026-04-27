@@ -192,7 +192,7 @@ def _calculate_per_90_stats(
     fixtures_per_player = df.groupby("element").size().rename("fixture_count")
     grouped["fixture_count"] = fixtures_per_player.reindex(grouped.index)
 
-    # Count only finished fixtures for percentage calculation
+    # Count only finished fixtures for calculation (omit unfinished games)
     if "finished" in df.columns:
         # Filter to only finished fixtures
         finished_df = df[df["finished"]]
@@ -224,7 +224,7 @@ def _calculate_per_90_stats(
             grouped.index
         ).fillna(0)
 
-        # Calculate percentage based on finished fixtures only
+        # Calculate percentage based on finished fixtures only (omit unfinished games)
         safe_fixture_count = grouped["finished_fixture_count"].replace(0, 1)
         grouped["percentage_of_mins_played"] = (
             grouped["finished_total_minutes"] / (safe_fixture_count * 90)
@@ -235,6 +235,7 @@ def _calculate_per_90_stats(
     else:
         # Fallback to all fixtures if finished column not available
         safe_fixture_count = grouped["fixture_count"].replace(0, 1)
+        grouped["finished_fixture_count"] = grouped["fixture_count"]
         grouped["percentage_of_mins_played"] = (
             grouped["total_minutes"] / (safe_fixture_count * 90)
         ).fillna(0)

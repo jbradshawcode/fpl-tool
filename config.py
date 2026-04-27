@@ -67,6 +67,9 @@ SUPPORTED_METRICS = [
     "transfers_in",
     "transfers_out",
     "yellow_cards",
+    "chance_of_playing_next_round",
+    "news",
+    "status",
 ]
 
 # Metrics supported for history
