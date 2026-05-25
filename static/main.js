@@ -1,6 +1,6 @@
 /* main.js — Initialization and configuration */
 
-import { toggleFutureWindow, updateLabel, updateGamesLabel, scheduleApply, scheduleSearch } from './filters.js';
+import { toggleFutureWindow, toggleNewPlayers, updateLabel, updateGamesLabel, scheduleApply, scheduleSearch } from './filters.js';
 import { setFPLConfig, buildParams, applyFilters, sortTable } from './navigation.js';
 import { initPinFunctionality } from './pinning.js';
 import { initTooltips } from './tooltip.js';
@@ -27,6 +27,7 @@ import { initTooltips } from './tooltip.js';
 
     // Expose functions to window for inline HTML handlers
     window.toggleFutureWindow = toggleFutureWindow;
+    window.toggleNewPlayers = toggleNewPlayers;
     window.updateLabel = updateLabel;
     window.scheduleApply = scheduleApply;
     window.scheduleSearch = scheduleSearch;

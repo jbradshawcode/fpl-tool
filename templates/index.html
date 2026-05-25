@@ -13,6 +13,12 @@
 
         <h1>⚽ FPL Expected Points Analysis</h1>
 
+        {% if season_over %}
+        <div class="season-banner">
+            🏁 Season complete — showing final 2024-25 data
+        </div>
+        {% endif %}
+
         {% include '_filters.html' %}
         {% include '_table.html' %}
         {% include '_pagination.html' %}

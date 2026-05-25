@@ -7,7 +7,10 @@ export function setFPLConfig(fplConfig) {
 }
 
 export function buildParams({ sort, order, page } = {}) {
-    const adjustOn = document.getElementById('adjust-difficulty-toggle').getAttribute('data-on') === 'true';
+    const difficultyToggle = document.getElementById('adjust-difficulty-toggle');
+    const adjustOn = difficultyToggle ? difficultyToggle.getAttribute('data-on') === 'true' : false;
+    const futureSlider = document.getElementById('future-slider');
+    const newPlayersToggle = document.getElementById('new-players-toggle');
     const currentPosition = document.getElementById('position-dropdown').value;
     const searchValue = document.getElementById('search-input').value.trim();
 
@@ -17,11 +20,21 @@ export function buildParams({ sort, order, page } = {}) {
         mins: document.getElementById('mins-slider').value,
         games: document.getElementById('games-slider').value,
         adjust_difficulty: adjustOn,
-        horizon: document.getElementById('future-slider').value,
         sort: sort || FPL.sortBy,
         order: order || FPL.sortOrder,
         page: page || 1,
     });
+
+    if (futureSlider) {
+        params.set('horizon', futureSlider.value);
+    }
+
+    if (newPlayersToggle) {
+        const newPlayersOn = newPlayersToggle.getAttribute('data-on') === 'true';
+        if (newPlayersOn) {
+            params.set('new_players_only', 'true');
+        }
+    }
 
     // Only add search parameter if it has a value
     if (searchValue) {

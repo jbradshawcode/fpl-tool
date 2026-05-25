@@ -19,7 +19,11 @@ from routes.utils import (
     get_position_names,
     generate_tooltip,
 )
-from services.data_service import load_fpl_data, fetch_players_for_analysis
+from services.data_service import (
+    load_fpl_data,
+    fetch_players_for_analysis,
+    has_archived_data,
+)
 from services.player_service import (
     extract_pinned_players,
     apply_all_filters,
@@ -76,7 +80,12 @@ def index():
 
         # Apply filters to non-pinned players
         df = apply_all_filters(
-            df, price_max, params["selected_team"], params["search_term"], players_df
+            df,
+            price_max,
+            params["selected_team"],
+            params["search_term"],
+            players_df,
+            params["new_players_only"],
         )
 
         # Sort and combine
@@ -128,6 +137,9 @@ def index():
             horizon=params["horizon"],
             search_term=params["search_term"],
             generate_tooltip=generate_tooltip,
+            season_over=meta["season_over"],
+            new_players_only=params["new_players_only"],
+            has_archived_data=has_archived_data(),
         )
 
     except Exception as e:

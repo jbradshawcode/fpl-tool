@@ -70,7 +70,11 @@ SUPPORTED_METRICS = [
     "chance_of_playing_next_round",
     "news",
     "status",
+    "code",
 ]
+
+# Archive directory for season data
+ARCHIVE_DIR = "data/archive/"
 
 # Metrics supported for history
 SUPPORTED_HISTORY_METRICS = [

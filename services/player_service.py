@@ -58,17 +58,26 @@ def apply_search_filter(
     return df
 
 
+def apply_new_players_filter(df: pd.DataFrame, new_players_only: bool) -> pd.DataFrame:
+    """Filter to only new-to-league players if toggled on."""
+    if not new_players_only or "is_new_to_league" not in df.columns:
+        return df
+    return df[df["is_new_to_league"]]
+
+
 def apply_all_filters(
     df: pd.DataFrame,
     price_max: float,
     selected_team: str,
     search_term: str,
     players_df: pd.DataFrame,
+    new_players_only: bool = False,
 ) -> pd.DataFrame:
     """Apply all filters to player data."""
     df = apply_price_filter(df, price_max)
     df = apply_team_filter(df, selected_team)
     df = apply_search_filter(df, search_term, players_df)
+    df = apply_new_players_filter(df, new_players_only)
     return df
 
 

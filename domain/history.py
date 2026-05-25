@@ -18,7 +18,9 @@ from config import POS_MAP, SUPPORTED_HISTORY_METRICS
 from infrastructure.loading import load_parameters
 
 
-def fetch_player_history(element_id: int, team_map: Dict[int, str]) -> pd.DataFrame:
+def fetch_player_history(
+    element_id: int, team_map: Dict[int, str]
+) -> tuple[pd.DataFrame, dict]:
     """Retrieve and format historical match data for a single player.
 
     Parameters
@@ -30,38 +32,33 @@ def fetch_player_history(element_id: int, team_map: Dict[int, str]) -> pd.DataFr
 
     Returns
     -------
-    pd.DataFrame
-        DataFrame containing the player's match-by-match history with
-        opponent names mapped in. If no data is returned, an empty
-        DataFrame is provided.
+    tuple[pd.DataFrame, dict]
+        Processed DataFrame and the raw API response for archival.
 
     """
     data = fetch_data(f"element-summary/{element_id}/")
 
-    # Check if data exists and history is not empty
     if not data or "history" not in data or not data["history"]:
-        return pd.DataFrame()
+        return pd.DataFrame(), data or {}
 
     df = pd.DataFrame(data["history"])
 
-    # Only map opponent_team if the column exists
     if "opponent_team" in df.columns:
         df["opponent_team_name"] = df["opponent_team"].map(team_map)
 
-    # Only select supported metrics that exist in the DataFrame
     available_metrics = [col for col in SUPPORTED_HISTORY_METRICS if col in df.columns]
 
     if not available_metrics:
-        return pd.DataFrame()
+        return pd.DataFrame(), data
 
-    return df[available_metrics]
+    return df[available_metrics], data
 
 
 def fetch_all_histories(
     player_ids: List[int],
     team_map: Dict[int, str],
     max_workers: int = 20,
-) -> pd.DataFrame:
+) -> tuple[pd.DataFrame, Dict[int, dict]]:
     """Fetch match histories for multiple players concurrently.
 
     Parameters
@@ -75,12 +72,12 @@ def fetch_all_histories(
 
     Returns
     -------
-    pd.DataFrame
-        Combined and sorted match history for all players. Returns an empty
-        DataFrame if no histories could be retrieved.
+    tuple[pd.DataFrame, Dict[int, dict]]
+        Combined match history DataFrame and raw API responses keyed by player ID.
 
     """
     all_histories = []
+    raw_summaries: Dict[int, dict] = {}
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = {
             executor.submit(fetch_player_history, pid, team_map): pid
@@ -91,18 +88,21 @@ def fetch_all_histories(
             total=len(futures),
             desc="Fetching player histories",
         ):
-            df = future.result()
+            pid = futures[future]
+            df, raw = future.result()
+            raw_summaries[pid] = raw
             if not df.empty:
                 all_histories.append(df)
 
     if not all_histories:
-        return pd.DataFrame()
+        return pd.DataFrame(), raw_summaries
 
-    return (
+    history_df = (
         pd.concat(all_histories, ignore_index=True)
         .sort_values(by=["element", "round"])
         .reset_index(drop=True)
     )
+    return history_df, raw_summaries
 
 
 def _add_position_info(

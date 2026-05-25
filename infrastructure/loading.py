@@ -16,7 +16,7 @@ from typing import List, Dict
 import pandas as pd
 
 from infrastructure.api_client import fetch_data
-from config import FIXTURES_ENDPOINT
+from config import ARCHIVE_DIR, FIXTURES_ENDPOINT
 from domain import history, preprocessing
 
 logger = logging.getLogger(__name__)
@@ -189,34 +189,91 @@ def retrieve_data(endpoint: str) -> dict:
     """Retrieve FPL data and build DataFrames without saving to disk."""
     try:
         logger.info("Fetching static data...")
-        data = fetch_data(endpoint=endpoint)
+        bootstrap_data = fetch_data(endpoint=endpoint)
     except Exception as e:
         logger.error(f"Failed to fetch data from API: {e}")
         raise
 
     logger.info("Building players dataframe...")
-    players_df, team_map = preprocessing.build_players_df(data)
+    players_df, team_map = preprocessing.build_players_df(bootstrap_data)
 
     logger.info("Fetching player histories...")
-    history_df = history.fetch_all_histories(players_df.index.tolist(), team_map)
+    history_df, raw_summaries = history.fetch_all_histories(
+        players_df.index.tolist(), team_map
+    )
 
     logger.info("Fetching fixtures and merging difficulty ratings...")
-    fixtures = fetch_data(FIXTURES_ENDPOINT)
-    fixtures_df = pd.DataFrame(fixtures)
-    fdr_df = _build_fixture_difficulty_map(fixtures)
+    fixtures_raw = fetch_data(FIXTURES_ENDPOINT)
+    fixtures_df = pd.DataFrame(fixtures_raw)
+    fdr_df = _build_fixture_difficulty_map(fixtures_raw)
     history_df = _merge_fixture_difficulty(history_df, players_df, fdr_df)
 
     # Merge fixture finished status into history_df
     history_df = _merge_fixture_status(history_df, fixtures_df, players_df)
 
-    scoring = data["game_config"]["scoring"]
+    scoring = bootstrap_data["game_config"]["scoring"]
 
     return {
         "players_df": players_df,
         "history_df": history_df,
         "fdr_df": fdr_df,
         "scoring": scoring,
+        "raw_bootstrap": bootstrap_data,
+        "raw_fixtures": fixtures_raw,
+        "raw_element_summaries": raw_summaries,
     }
+
+
+def archive_season(season_name: str, data: dict) -> bool:
+    """Archive a complete season's raw API payloads and processed data.
+
+    Parameters
+    ----------
+    season_name : str
+        Season identifier (e.g., "2024-25").
+    data : dict
+        Data dict from retrieve_data() containing raw payloads and processed DataFrames.
+
+    Returns
+    -------
+    bool
+        True if archive was created, False if it already existed.
+
+    """
+    season_dir = os.path.join(ARCHIVE_DIR, season_name)
+    if os.path.exists(season_dir):
+        logger.info(f"Archive already exists for {season_name}, skipping")
+        return False
+
+    logger.info(f"Archiving season {season_name}...")
+    raw_dir = os.path.join(season_dir, "raw")
+    summaries_dir = os.path.join(raw_dir, "element_summaries")
+    os.makedirs(summaries_dir, exist_ok=True)
+
+    # Save raw API responses
+    with open(os.path.join(raw_dir, "bootstrap_static.json"), "w") as f:
+        json.dump(data["raw_bootstrap"], f)
+    with open(os.path.join(raw_dir, "fixtures.json"), "w") as f:
+        json.dump(data["raw_fixtures"], f)
+    for pid, summary in data["raw_element_summaries"].items():
+        with open(os.path.join(summaries_dir, f"{pid}.json"), "w") as f:
+            json.dump(summary, f)
+
+    # Save processed data
+    data["players_df"].to_csv(
+        os.path.join(season_dir, "players_data.csv"), index=True, index_label="id"
+    )
+    data["history_df"].to_csv(
+        os.path.join(season_dir, "player_histories.csv"), index=False
+    )
+    data["fdr_df"].to_csv(
+        os.path.join(season_dir, "fixture_difficulty_ratings.csv"), index=False
+    )
+    with open(os.path.join(season_dir, "scoring.json"), "w") as f:
+        json.dump(data["scoring"], f, indent=4)
+
+    logger.info(f"Season {season_name} archived to {season_dir}")
+    return True
 
 
 def save_data(data: dict) -> None:

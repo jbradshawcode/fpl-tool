@@ -35,15 +35,26 @@ def get_game_metadata(history_df: pd.DataFrame) -> dict:
     """Calculate game metadata like max games and remaining rounds."""
     max_games = int(history_df["round"].max()) if len(history_df) > 0 else 38
     total_rounds = 38
+    remaining_games = total_rounds - max_games
     return {
         "max_games": max_games,
-        "remaining_games": total_rounds - max_games,
+        "remaining_games": remaining_games,
         "default_games": min(5, max_games),
+        "season_over": remaining_games == 0,
     }
 
 
 def parse_query_params(flask_request, default_games: int, remaining_games: int) -> dict:
     """Parse and return all query parameters from request."""
+    if remaining_games > 0:
+        adjust_difficulty = (
+            flask_request.args.get("adjust_difficulty", "true", type=str) == "true"
+        )
+        horizon = min(flask_request.args.get("horizon", 5, type=int), remaining_games)
+    else:
+        adjust_difficulty = False
+        horizon = None
+
     return {
         "selected_position": flask_request.args.get("position", "", type=str),
         "page": flask_request.args.get("page", 1, type=int),
@@ -54,11 +65,12 @@ def parse_query_params(flask_request, default_games: int, remaining_games: int) 
         "selected_team": flask_request.args.get("team", "", type=str),
         "price_max": flask_request.args.get("price_max", None, type=float),
         "search_term": flask_request.args.get("search", "", type=str),
-        "adjust_difficulty": flask_request.args.get(
-            "adjust_difficulty", "true", type=str
+        "adjust_difficulty": adjust_difficulty,
+        "horizon": horizon,
+        "new_players_only": flask_request.args.get(
+            "new_players_only", "false", type=str
         )
         == "true",
-        "horizon": min(flask_request.args.get("horizon", 5, type=int), remaining_games),
     }
 
 

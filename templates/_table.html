@@ -46,6 +46,9 @@
                     <td class="rank">{{ player.rank|int }}</td>
                     <td class="player-name">
                         {{ player.web_name }}
+                        {% if player.is_new_to_league %}
+                        <span class="new-player-icon" data-tooltip="New to the Premier League">✨</span>
+                        {% endif %}
                         {% if player.games_mismatch or (player.status and player.status != 'a') %}
                         <span class="warning-icon" data-tooltip="{{ generate_tooltip(player) }}">⚠️</span>
                         {% endif %}

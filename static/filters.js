@@ -7,9 +7,18 @@ export function toggleFutureWindow(pill) {
     const nowOn = pill.getAttribute('data-on') !== 'true';
     pill.setAttribute('data-on', nowOn);
     pill.querySelector('.pill-label').textContent = nowOn ? 'On' : 'Off';
-    document.getElementById('future-window-item').setAttribute('data-visible', nowOn);
-    // applyFilters will be imported from navigation.js
+    const futureItem = document.getElementById('future-window-item');
+    if (futureItem) {
+        futureItem.setAttribute('data-visible', nowOn);
+    }
     window.applyFilters({ keepPage: true });
+}
+
+export function toggleNewPlayers(pill) {
+    const nowOn = pill.getAttribute('data-on') !== 'true';
+    pill.setAttribute('data-on', nowOn);
+    pill.querySelector('.pill-label').textContent = nowOn ? 'On' : 'Off';
+    window.applyFilters();
 }
 
 export function updateLabel(id, text) {

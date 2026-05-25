@@ -2,7 +2,8 @@
    Context variables required:
      all_positions, selected_position, all_teams, selected_team,
      adjust_difficulty, mins_threshold, global_price_min, global_price_max,
-     price_max, time_period, max_games, horizon, remaining_games, search_term
+     price_max, time_period, max_games, horizon, remaining_games, search_term,
+     season_over, new_players_only, has_archived_data
 #}
 <div class="position-selector">
 
@@ -48,6 +49,7 @@
             </select>
         </div>
 
+        {% if not season_over %}
         <div class="selector-item selector-item--pill">
             <label for="adjust-difficulty-toggle">Adjust for Fixture Difficulty:</label>
             <div class="pill-toggle"
@@ -58,6 +60,20 @@
                 <span class="pill-label">{{ 'On' if adjust_difficulty else 'Off' }}</span>
             </div>
         </div>
+        {% endif %}
+
+        {% if has_archived_data %}
+        <div class="selector-item selector-item--pill">
+            <label for="new-players-toggle">New Players Only:</label>
+            <div class="pill-toggle"
+                 id="new-players-toggle"
+                 onclick="toggleNewPlayers(this)"
+                 data-on="{{ 'true' if new_players_only else 'false' }}">
+                <div class="pill-knob"></div>
+                <span class="pill-label">{{ 'On' if new_players_only else 'Off' }}</span>
+            </div>
+        </div>
+        {% endif %}
 
     </div>
 
@@ -108,6 +124,7 @@
             </div>
         </div>
 
+        {% if not season_over %}
         <div class="selector-item" id="future-window-item"
             data-visible="{{ 'true' if adjust_difficulty else 'false' }}">
             <label for="future-slider">Horizon:</label>
@@ -115,7 +132,7 @@
                 <input
                     type="range"
                     id="future-slider"
-                    min="1" max="{{ remaining_games }}" step="1"
+                    min="1" max="{{ [remaining_games, 1]|max }}" step="1"
                     value="{{ horizon }}"
                     oninput="updateLabel('future-value', this.value + (this.value == 1 ? ' Game' : ' Games')); scheduleApply()"
                 >
@@ -124,6 +141,7 @@
                 </span>
             </div>
         </div>
+        {% endif %}
 
     </div>
 

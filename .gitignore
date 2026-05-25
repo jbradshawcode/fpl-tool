@@ -4,6 +4,7 @@ data/players/players_data.csv
 data/fixtures/fixture_difficulty_ratings.csv
 data/rules/scoring.json
 data/last_update.txt
+data/archive/
 
 # Virtual environments
 .venv/
@@ -38,5 +39,6 @@ Thumbs.db
 # Notes
 IDEAS.md
 
-# Windsurf
-.windsurf/
+# AI assistants
+.claude/
+CLAUDE.md
