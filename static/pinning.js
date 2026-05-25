@@ -96,53 +96,46 @@ export function closeContextMenu() {
     document.removeEventListener('click', closeContextMenu);
 }
 
-export function getCleanPlayerName(playerNameCell) {
-    // Remove both pin and warning icons if present to get clean name
-    let text = playerNameCell.textContent;
-    text = text.replace('📌 ', '').replace('⚠️', '').trim();
+export function getCleanPlayerName(el) {
+    let text = el.textContent;
+    text = text.replace('📌 ', '').replace('⚠️', '').replace('✨', '').trim();
     return text;
 }
 
 export function initPinFunctionality() {
-    const tbody = document.querySelector('tbody');
-    if (!tbody) return;
-    
-    // Add right-click handlers to all player rows
-    tbody.addEventListener('contextmenu', function(event) {
-        const row = event.target.closest('tr');
-        if (!row) return;
-        
-        const playerNameCell = row.querySelector('.player-name');
-        if (!playerNameCell) return;
-        
-        const playerName = getCleanPlayerName(playerNameCell);
+    const list = document.querySelector('.list');
+    if (!list) return;
+
+    list.addEventListener('contextmenu', function(event) {
+        const card = event.target.closest('.card');
+        if (!card) return;
+
+        const nameEl = card.querySelector('.nm');
+        if (!nameEl) return;
+
+        const playerName = getCleanPlayerName(nameEl);
         showContextMenu(event, playerName);
     });
-    
-    // Clean up existing pin styling and icons first
-    const rows = tbody.querySelectorAll('tr');
-    rows.forEach(row => {
-        row.classList.remove('pinned-row');
-        const pinIcon = row.querySelector('.pin-icon');
-        if (pinIcon) {
-            pinIcon.remove();
-        }
+
+    const cards = list.querySelectorAll('.card');
+    cards.forEach(card => {
+        card.classList.remove('pinned-card');
+        const pinIcon = card.querySelector('.pin-icon');
+        if (pinIcon) pinIcon.remove();
     });
-    
-    // Mark pinned rows
+
     const pinned = getPinnedPlayers();
-    rows.forEach(row => {
-        const playerNameCell = row.querySelector('.player-name');
-        if (!playerNameCell) return;
-        
-        const playerName = getCleanPlayerName(playerNameCell);
+    cards.forEach(card => {
+        const nameEl = card.querySelector('.nm');
+        if (!nameEl) return;
+
+        const playerName = getCleanPlayerName(nameEl);
         if (pinned.includes(playerName)) {
-            row.classList.add('pinned-row');
-            // Add pin icon to player name
+            card.classList.add('pinned-card');
             const icon = document.createElement('span');
             icon.className = 'pin-icon';
             icon.textContent = '📌 ';
-            playerNameCell.insertBefore(icon, playerNameCell.firstChild);
+            nameEl.insertBefore(icon, nameEl.firstChild);
         }
     });
 }

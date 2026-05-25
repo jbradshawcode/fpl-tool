@@ -1,7 +1,7 @@
 /* main.js — Initialization and configuration */
 
 import { toggleFutureWindow, toggleNewPlayers, updateLabel, updateGamesLabel, scheduleApply, scheduleSearch } from './filters.js';
-import { setFPLConfig, buildParams, applyFilters, sortTable } from './navigation.js';
+import { setFPLConfig, buildParams, applyFilters, sortTable, changeSortColumn, toggleSortDirection } from './navigation.js';
 import { initPinFunctionality } from './pinning.js';
 import { initTooltips } from './tooltip.js';
 
@@ -33,6 +33,8 @@ import { initTooltips } from './tooltip.js';
     window.scheduleSearch = scheduleSearch;
     window.applyFilters = applyFilters;
     window.sortTable = sortTable;
+    window.changeSortColumn = changeSortColumn;
+    window.toggleSortDirection = toggleSortDirection;
 
     // Initialize pin functionality on page load
     initPinFunctionality();

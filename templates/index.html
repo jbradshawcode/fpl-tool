@@ -1,21 +1,31 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
-    <meta charset="UTF-8">
+    <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=2.0, user-scalable=yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>FPL Expected Points Analysis</title>
+    <title>FPL xP — Expected Points</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=Archivo+Expanded:wght@600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <div class="container">
+    <div class="wrap">
 
-        <h1>⚽ FPL Expected Points Analysis</h1>
+        <div class="topbar">
+            <div class="brand">
+                <div class="kick">Fantasy · Gameweek model</div>
+                <h1>Expected Points</h1>
+            </div>
+            <button class="toggle" onclick="toggleTheme()">
+                <span id="theme-label">Dark mode</span>
+            </button>
+        </div>
 
         {% if season_over %}
         <div class="season-banner">
-            🏁 Season complete — showing final 2024-25 data
+            Season complete — showing final 2024-25 data
         </div>
         {% endif %}
 
@@ -25,7 +35,6 @@
 
     </div>
 
-    {# Pass server-rendered state to fpl.js as a plain JS object #}
     <div id="fpl-config"
         data-max-games="{{ max_games }}"
         data-selected-position="{{ selected_position }}"
@@ -33,6 +42,22 @@
         data-sort-order="{{ sort_order }}"
         data-page="{{ page }}">
     </div>
+    <script>
+        (function() {
+            var t = localStorage.getItem('fpl-theme') || 'light';
+            document.documentElement.setAttribute('data-theme', t);
+            var label = document.getElementById('theme-label');
+            if (label) label.textContent = t === 'light' ? 'Dark mode' : 'Light mode';
+        })();
+        function toggleTheme() {
+            var html = document.documentElement;
+            var isDark = html.getAttribute('data-theme') === 'dark';
+            var newTheme = isDark ? 'light' : 'dark';
+            html.setAttribute('data-theme', newTheme);
+            localStorage.setItem('fpl-theme', newTheme);
+            document.getElementById('theme-label').textContent = isDark ? 'Dark mode' : 'Light mode';
+        }
+    </script>
     <script type="module" src="{{ url_for('static', filename='main.js') }}"></script>
 </body>
 </html>

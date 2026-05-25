@@ -72,3 +72,12 @@ export function sortTable(column) {
 
     window.location.href = '/?' + buildParams({ sort: newSort, order: newOrder, page: 1 }).toString();
 }
+
+export function changeSortColumn(column) {
+    window.location.href = '/?' + buildParams({ sort: column, order: 'desc', page: 1 }).toString();
+}
+
+export function toggleSortDirection() {
+    const newOrder = FPL.sortOrder === 'desc' ? 'asc' : 'desc';
+    window.location.href = '/?' + buildParams({ sort: FPL.sortBy, order: newOrder, page: 1 }).toString();
+}

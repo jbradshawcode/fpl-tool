@@ -1,74 +1,83 @@
-{# templates/_table.html
+{# templates/_table.html — Card-based player list
    Context variables required:
      position_data  — object with: name, start_rank, end_rank, total_players, players
      sort_by, sort_order
 #}
-<div class="position-section">
-    <div class="section-header">
-        <h2 class="position-title">{{ position_data.name }}</h2>
-        <p class="player-count">
-            Showing {{ position_data.start_rank }}–{{ position_data.end_rank }}
-            of {{ position_data.total_players }} players
-        </p>
+<div class="listhead">
+    <h2>{{ position_data.name }}</h2>
+    <div class="sort-ctrl">
+        <label>Sort</label>
+        <select id="sort-dropdown" onchange="changeSortColumn(this.value)">
+            {% set sort_options = [
+                ('expected_points',           'xP'),
+                ('actual_points',             'AP'),
+                ('expected_points_per_90',    'xP/90'),
+                ('actual_points_per_90',      'AP/90'),
+                ('now_cost',                  'Cost'),
+                ('percentage_of_mins_played', 'Mins %'),
+                ('web_name',                  'Name'),
+                ('team_name',                 'Team'),
+            ] %}
+            {% for val, label in sort_options %}
+            <option value="{{ val }}" {% if sort_by == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+        <button class="sort-dir-btn" onclick="toggleSortDirection()"
+                title="Toggle sort direction">
+            {{ '▼' if sort_order == 'desc' else '▲' }}
+        </button>
     </div>
+    <span class="count">
+        {{ position_data.start_rank }}–{{ position_data.end_rank }}
+        of {{ position_data.total_players }}
+    </span>
+</div>
 
-    <div class="table-wrapper">
-        <table>
-            <thead>
-                <tr>
-                    <th>Rank</th>
-                    {% set cols = [
-                        ('web_name',                  'Player',   false),
-                        ('pos_abbr',                  'Position', false),
-                        ('team_name',                 'Team',     false),
-                        ('now_cost',                  'Cost',    true),
-                        ('percentage_of_mins_played', 'Mins %',  true),
-                        ('expected_points',           'xP',      true),
-                        ('actual_points',             'AP',      true),
-                        ('expected_points_per_90',    'xP/90',   true),
-                        ('actual_points_per_90',      'AP/90',   true),
-                    ] %}
-                    {% for col_key, col_label, is_numeric in cols %}
-                    <th class="{{ 'numeric ' if is_numeric }}sortable"
-                        onclick="sortTable('{{ col_key }}')">
-                        {{ col_label }}
-                        {% if sort_by == col_key %}
-                        <span class="sort-arrow">{{ '▼' if sort_order == 'desc' else '▲' }}</span>
-                        {% endif %}
-                    </th>
-                    {% endfor %}
-                </tr>
-            </thead>
-            <tbody>
-                {% if position_data.players %}
-                {% for player in position_data.players %}
-                <tr>
-                    <td class="rank">{{ player.rank|int }}</td>
-                    <td class="player-name">
-                        {{ player.web_name }}
-                        {% if player.is_new_to_league %}
-                        <span class="new-player-icon" data-tooltip="New to the Premier League">✨</span>
-                        {% endif %}
-                        {% if player.games_mismatch or (player.status and player.status != 'a') %}
-                        <span class="warning-icon" data-tooltip="{{ generate_tooltip(player) }}">⚠️</span>
-                        {% endif %}
-                    </td>
-                    <td class="position-code">{{ player.pos_abbr }}</td>
-                    <td class="team-name">{{ player.team_name }}</td>
-                    <td class="numeric">£{{ "%.1f"|format(player.now_cost) }}m</td>
-                    <td class="numeric">{{ "%.2f"|format(player.percentage_of_mins_played) }}%</td>
-                    <td class="numeric">{{ "%.2f"|format(player.expected_points) }}</td>
-                    <td class="numeric">{{ "%.2f"|format(player.actual_points) }}</td>
-                    <td class="numeric">{{ "%.2f"|format(player.expected_points_per_90) }}</td>
-                    <td class="numeric">{{ "%.2f"|format(player.actual_points_per_90) }}</td>
-                </tr>
-                {% endfor %}
-                {% else %}
-                <tr>
-                    <td colspan="10" class="no-results">No players found matching your filters.</td>
-                </tr>
+<div class="list" id="list">
+    {% if position_data.players %}
+    {% for player in position_data.players %}
+    <div class="card" data-team="{{ player.team_name }}">
+        <div class="rank">{{ player.rank|int }}</div>
+        <div class="who">
+            <div class="nm">
+                {{ player.web_name }}
+                {% if player.is_new_to_league %}
+                <span class="new-player-icon" data-tooltip="New to the Premier League">✨</span>
                 {% endif %}
-            </tbody>
-        </table>
+                {% if player.games_mismatch or (player.status and player.status != 'a') %}
+                <span class="warning-icon" data-tooltip="{{ generate_tooltip(player) }}">⚠️</span>
+                {% endif %}
+            </div>
+            <div class="meta">
+                <span class="pos {{ player.pos_abbr }}">{{ player.pos_abbr }}</span>
+                <span>{{ player.team_name }}</span>
+                <span>·</span>
+                <span>£{{ "%.1f"|format(player.now_cost) }}m</span>
+                <span>·</span>
+                <span>{{ "%.2f"|format(player.percentage_of_mins_played) }}% mins</span>
+            </div>
+        </div>
+        <div class="stats">
+            <div class="stat">
+                <div class="k">AP</div>
+                <div class="v">{{ "%.2f"|format(player.actual_points) }}</div>
+            </div>
+            <div class="stat">
+                <div class="k">AP/90</div>
+                <div class="v">{{ "%.2f"|format(player.actual_points_per_90) }}</div>
+            </div>
+            <div class="stat">
+                <div class="k">xP/90</div>
+                <div class="v">{{ "%.2f"|format(player.expected_points_per_90) }}</div>
+            </div>
+            <div class="xpbox">
+                <div class="k">xP</div>
+                <div class="v">{{ "%.2f"|format(player.expected_points) }}</div>
+            </div>
+        </div>
     </div>
+    {% endfor %}
+    {% else %}
+    <div class="no-results">No players found matching your filters.</div>
+    {% endif %}
 </div>
