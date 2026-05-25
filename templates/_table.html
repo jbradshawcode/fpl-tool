@@ -1,13 +1,19 @@
 {# templates/_table.html — Card-based player list
    Context variables required:
      position_data  — object with: name, start_rank, end_rank, total_players, players
-     sort_by, sort_order
+     sort_by, sort_order, base_qs
 #}
 <div class="listhead">
     <h2>{{ position_data.name }}</h2>
     <div class="sort-ctrl">
         <label>Sort</label>
-        <select id="sort-dropdown" onchange="changeSortColumn(this.value)">
+        <select hx-get="/"
+                hx-target="#results"
+                hx-push-url="true"
+                hx-swap="innerHTML"
+                name="sort"
+                hx-vals='{"position": "{{ selected_positions|join(",") }}", "team": "{{ selected_teams|join(",") }}", "mins": "{{ mins_threshold }}", "games": "{{ time_period }}", "adjust_difficulty": "{{ adjust_difficulty|lower }}", "horizon": "{{ horizon or 1 }}", "price_max": "{{ "%.1f"|format(price_max) }}", "search": "{{ search_term }}", "new_players_only": "{{ new_players_only|lower }}", "order": "desc", "page": "1"}'
+                hx-include="this">
             {% set sort_options = [
                 ('expected_points',           'xP'),
                 ('actual_points',             'AP'),
@@ -22,7 +28,12 @@
             <option value="{{ val }}" {% if sort_by == val %}selected{% endif %}>{{ label }}</option>
             {% endfor %}
         </select>
-        <button class="sort-dir-btn" onclick="toggleSortDirection()"
+        {% set next_order = 'asc' if sort_order == 'desc' else 'desc' %}
+        <button class="sort-dir-btn"
+                hx-get="/?{{ base_qs }}&sort={{ sort_by }}&order={{ next_order }}&page=1"
+                hx-target="#results"
+                hx-push-url="true"
+                hx-swap="innerHTML"
                 title="Toggle sort direction">
             {{ '▼' if sort_order == 'desc' else '▲' }}
         </button>

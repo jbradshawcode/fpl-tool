@@ -126,8 +126,20 @@ def index():
             "end_rank": min(page * 10, total_players),
         }
 
-        return render_template(
-            "index.html",
+        # Base query string for pagination/sort links (excludes sort/order/page)
+        base_qs = (
+            f"position={','.join(selected_positions)}"
+            f"&team={','.join(params['selected_teams'])}"
+            f"&mins={params['mins_threshold']}"
+            f"&games={params['time_period']}"
+            f"&adjust_difficulty={str(params['adjust_difficulty']).lower()}"
+            f"&horizon={params['horizon'] or 1}"
+            f"&price_max={price_max:.1f}"
+            f"&search={params['search_term']}"
+            f"&new_players_only={str(params['new_players_only']).lower()}"
+        )
+
+        template_vars = dict(
             position_data=position_data,
             all_positions=position_names,
             selected_positions=selected_positions,
@@ -150,7 +162,13 @@ def index():
             season_over=meta["season_over"],
             new_players_only=params["new_players_only"],
             has_archived_data=has_archived_data(),
+            base_qs=base_qs,
         )
+
+        if request.headers.get("HX-Request"):
+            return render_template("_results.html", **template_vars)
+
+        return render_template("index.html", **template_vars)
 
     except Exception as e:
         logger.error(f"Error loading data: {e}")

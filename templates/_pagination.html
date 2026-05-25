@@ -1,16 +1,15 @@
 {# templates/_pagination.html
    Context variables required:
-     page, position_data (total_pages),
-     selected_positions, selected_teams, mins_threshold, time_period,
-     sort_by, sort_order, price_max, adjust_difficulty, horizon,
-     search_term, new_players_only
+     page, position_data (total_pages), base_qs, sort_by, sort_order
 #}
-{% set base_qs %}position={{ selected_positions|join(',') }}&mins={{ mins_threshold }}&games={{ time_period }}&sort={{ sort_by }}&order={{ sort_order }}&team={{ selected_teams|join(',') }}&price_max={{ price_max }}&adjust_difficulty={{ adjust_difficulty|lower }}&horizon={{ horizon }}&search={{ search_term }}&new_players_only={{ new_players_only|lower }}{% endset %}
-
 <div class="foot">
 
     {% if page > 1 %}
-    <a href="/?{{ base_qs }}&page={{ page - 1 }}">← Prev</a>
+    <a hx-get="/?{{ base_qs }}&sort={{ sort_by }}&order={{ sort_order }}&page={{ page - 1 }}"
+       hx-target="#results"
+       hx-push-url="true"
+       hx-swap="innerHTML"
+       href="/?{{ base_qs }}&sort={{ sort_by }}&order={{ sort_order }}&page={{ page - 1 }}">← Prev</a>
     {% else %}
     <span class="page-btn disabled">← Prev</span>
     {% endif %}
@@ -18,7 +17,11 @@
     <span class="pg">Page {{ page }} / {{ position_data.total_pages }}</span>
 
     {% if page < position_data.total_pages %}
-    <a href="/?{{ base_qs }}&page={{ page + 1 }}">Next →</a>
+    <a hx-get="/?{{ base_qs }}&sort={{ sort_by }}&order={{ sort_order }}&page={{ page + 1 }}"
+       hx-target="#results"
+       hx-push-url="true"
+       hx-swap="innerHTML"
+       href="/?{{ base_qs }}&sort={{ sort_by }}&order={{ sort_order }}&page={{ page + 1 }}">Next →</a>
     {% else %}
     <span class="page-btn disabled">Next →</span>
     {% endif %}

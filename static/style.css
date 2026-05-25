@@ -412,8 +412,6 @@ input[type="range"]::-moz-range-thumb {
 
 .pill-label { display: none; }
 
-#future-window-item[data-visible="false"] { display: none; }
-
 /* ── List header ────────────────────────────────────────────────────────── */
 
 .listhead {

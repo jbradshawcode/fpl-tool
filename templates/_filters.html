@@ -3,37 +3,34 @@
      all_positions, selected_positions, all_teams, selected_teams,
      adjust_difficulty, mins_threshold, global_price_min, global_price_max,
      price_max, time_period, max_games, horizon, remaining_games, search_term,
-     season_over, new_players_only, has_archived_data
+     season_over, new_players_only, has_archived_data, sort_by, sort_order, page
 #}
-<div class="controls">
+<div class="controls"
+     x-data="filters()"
+     x-init="init()"
+     @click.away="posOpen = false; teamOpen = false">
 
     <div class="field">
-        <label for="search-input">Search</label>
-        <input type="text" id="search-input"
-               placeholder="Van Dijk, Salah…"
-               value="{{ search_term }}"
-               oninput="scheduleSearch()">
+        <label>Search</label>
+        <input type="text" placeholder="Van Dijk, Salah…"
+               x-model="search"
+               @input.debounce.600ms="apply()">
     </div>
 
+    {# ── Position multi-select ── #}
     <div class="field">
         <label>Position</label>
-        <div class="multiselect" id="position-multiselect">
-            <div class="multiselect-display" onclick="toggleMultiselect('position-multiselect')">
-                <span class="multiselect-text">
-                    {% if selected_positions %}
-                        {{ selected_positions|join(', ') }}
-                    {% else %}
-                        All positions
-                    {% endif %}
-                </span>
+        <div class="multiselect" :class="{ open: posOpen }">
+            <div class="multiselect-display" @click.stop="posOpen = !posOpen; teamOpen = false">
+                <span class="multiselect-text" x-text="positionLabel()"></span>
                 <svg class="multiselect-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6l4 4 4-4"/></svg>
             </div>
-            <div class="multiselect-dropdown">
+            <div class="multiselect-dropdown" @click.stop>
                 {% for pos_code, pos_name in all_positions.items() %}
                 <label class="multiselect-option">
                     <input type="checkbox" value="{{ pos_code }}"
-                           {% if pos_code in selected_positions %}checked{% endif %}
-                           onchange="applyFilters()">
+                           :checked="positions.includes('{{ pos_code }}')"
+                           @change="togglePosition('{{ pos_code }}')">
                     <span class="multiselect-check"></span>
                     <span>{{ pos_name }}</span>
                 </label>
@@ -42,29 +39,20 @@
         </div>
     </div>
 
+    {# ── Team multi-select ── #}
     <div class="field">
         <label>Team</label>
-        <div class="multiselect" id="team-multiselect">
-            <div class="multiselect-display" onclick="toggleMultiselect('team-multiselect')">
-                <span class="multiselect-text">
-                    {% if selected_teams %}
-                        {% if selected_teams|length <= 2 %}
-                            {{ selected_teams|join(', ') }}
-                        {% else %}
-                            {{ selected_teams|length }} teams
-                        {% endif %}
-                    {% else %}
-                        All teams
-                    {% endif %}
-                </span>
+        <div class="multiselect" :class="{ open: teamOpen }">
+            <div class="multiselect-display" @click.stop="teamOpen = !teamOpen; posOpen = false">
+                <span class="multiselect-text" x-text="teamLabel()"></span>
                 <svg class="multiselect-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6l4 4 4-4"/></svg>
             </div>
-            <div class="multiselect-dropdown">
+            <div class="multiselect-dropdown" @click.stop>
                 {% for team in all_teams %}
                 <label class="multiselect-option">
                     <input type="checkbox" value="{{ team }}"
-                           {% if team in selected_teams %}checked{% endif %}
-                           onchange="applyFilters()">
+                           :checked="teams.includes('{{ team }}')"
+                           @change="toggleTeam('{{ team }}')">
                     <span class="multiselect-check"></span>
                     <span>{{ team }}</span>
                 </label>
@@ -73,63 +61,53 @@
         </div>
     </div>
 
+    {# ── Sliders ── #}
     <div class="slider">
         <div class="lab">
             <span class="k">Mins</span>
-            <span class="v" id="mins-value">{{ mins_threshold }}%</span>
+            <span class="v" x-text="mins + '%'"></span>
         </div>
-        <input type="range" id="mins-slider"
-               min="0" max="100" step="1"
-               value="{{ mins_threshold }}"
-               oninput="updateLabel('mins-value', this.value + '%'); scheduleApply()">
+        <input type="range" min="0" max="100" step="1"
+               x-model="mins"
+               @change="apply()">
     </div>
 
     <div class="slider">
         <div class="lab">
             <span class="k">Max £</span>
-            <span class="v" id="price-value">£{{ "%.1f"|format(price_max) }}m</span>
+            <span class="v" x-text="'£' + parseFloat(priceMax).toFixed(1) + 'm'"></span>
         </div>
-        <input type="range" id="price-slider"
-               min="{{ global_price_min }}" max="{{ global_price_max }}" step="0.1"
-               value="{{ price_max }}"
-               oninput="updateLabel('price-value', '£' + parseFloat(this.value).toFixed(1) + 'm'); scheduleApply()">
+        <input type="range" min="{{ global_price_min }}" max="{{ global_price_max }}" step="0.1"
+               x-model="priceMax"
+               @change="apply()">
     </div>
 
     <div class="slider">
         <div class="lab">
             <span class="k">Recency</span>
-            <span class="v" id="games-value">
-                {{ time_period }}{% if time_period == 1 %} Game{% else %} Games{% endif %}{% if time_period == max_games %} (All){% endif %}
-            </span>
+            <span class="v" x-text="gamesLabel()"></span>
         </div>
-        <input type="range" id="games-slider"
-               min="1" max="{{ max_games }}" step="1"
-               value="{{ time_period }}"
-               oninput="updateGamesLabel(this.value); scheduleApply()">
+        <input type="range" min="1" max="{{ max_games }}" step="1"
+               x-model="games"
+               @change="apply()">
     </div>
 
     {% if not season_over %}
-    <div class="slider" id="future-window-item"
-         data-visible="{{ 'true' if adjust_difficulty else 'false' }}">
+    <div class="slider" x-show="adjustDifficulty" x-transition>
         <div class="lab">
             <span class="k">Horizon</span>
-            <span class="v" id="future-value">
-                {{ horizon }} {{ 'Game' if horizon == 1 else 'Games' }}
-            </span>
+            <span class="v" x-text="horizon == 1 ? '1 Game' : horizon + ' Games'"></span>
         </div>
-        <input type="range" id="future-slider"
-               min="1" max="{{ [remaining_games, 1]|max }}" step="1"
-               value="{{ horizon }}"
-               oninput="updateLabel('future-value', this.value + (this.value == 1 ? ' Game' : ' Games')); scheduleApply()">
+        <input type="range" min="1" max="{{ [remaining_games, 1]|max }}" step="1"
+               x-model="horizon"
+               @change="apply()">
     </div>
 
     <div class="sw">
         Fixtures
-        <div class="pill-toggle" id="adjust-difficulty-toggle"
-             onclick="toggleFutureWindow(this)"
-             data-on="{{ 'true' if adjust_difficulty else 'false' }}">
+        <div class="pill-toggle" :data-on="adjustDifficulty ? 'true' : 'false'"
+             @click="adjustDifficulty = !adjustDifficulty; apply()">
             <div class="pill-knob"></div>
-            <span class="pill-label">{{ 'On' if adjust_difficulty else 'Off' }}</span>
         </div>
     </div>
     {% endif %}
@@ -137,13 +115,30 @@
     {% if has_archived_data %}
     <div class="sw">
         New
-        <div class="pill-toggle" id="new-players-toggle"
-             onclick="toggleNewPlayers(this)"
-             data-on="{{ 'true' if new_players_only else 'false' }}">
+        <div class="pill-toggle" :data-on="newPlayersOnly ? 'true' : 'false'"
+             @click="newPlayersOnly = !newPlayersOnly; apply()">
             <div class="pill-knob"></div>
-            <span class="pill-label">{{ 'On' if new_players_only else 'Off' }}</span>
         </div>
     </div>
     {% endif %}
 
 </div>
+
+<script>
+    window._fplState = {
+        positions: {{ selected_positions | tojson }},
+        teams: {{ selected_teams | tojson }},
+        search: {{ search_term | tojson }},
+        mins: {{ mins_threshold }},
+        priceMax: {{ "%.1f"|format(price_max) }},
+        games: {{ time_period }},
+        maxGames: {{ max_games }},
+        horizon: {{ horizon or 1 }},
+        adjustDifficulty: {{ adjust_difficulty | tojson }},
+        newPlayersOnly: {{ new_players_only | tojson }},
+        sort: {{ sort_by | tojson }},
+        order: {{ sort_order | tojson }},
+        page: {{ page }},
+        initialPositions: {{ selected_positions | tojson }},
+    };
+</script>
