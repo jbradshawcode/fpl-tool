@@ -6,17 +6,25 @@ export function setFPLConfig(fplConfig) {
     FPL = fplConfig;
 }
 
+function getCheckedValues(multiselectId) {
+    var boxes = document.querySelectorAll('#' + multiselectId + ' input[type="checkbox"]:checked');
+    var vals = [];
+    for (var i = 0; i < boxes.length; i++) vals.push(boxes[i].value);
+    return vals.join(',');
+}
+
 export function buildParams({ sort, order, page } = {}) {
     const difficultyToggle = document.getElementById('adjust-difficulty-toggle');
     const adjustOn = difficultyToggle ? difficultyToggle.getAttribute('data-on') === 'true' : false;
     const futureSlider = document.getElementById('future-slider');
     const newPlayersToggle = document.getElementById('new-players-toggle');
-    const currentPosition = document.getElementById('position-dropdown').value;
+    const currentPositions = getCheckedValues('position-multiselect');
+    const currentTeams = getCheckedValues('team-multiselect');
     const searchValue = document.getElementById('search-input').value.trim();
 
     const params = new URLSearchParams({
-        position: currentPosition,
-        team: document.getElementById('team-dropdown').value,
+        position: currentPositions,
+        team: currentTeams,
         mins: document.getElementById('mins-slider').value,
         games: document.getElementById('games-slider').value,
         adjust_difficulty: adjustOn,
@@ -36,14 +44,11 @@ export function buildParams({ sort, order, page } = {}) {
         }
     }
 
-    // Only add search parameter if it has a value
     if (searchValue) {
         params.set('search', searchValue);
     }
 
-    // Only omit price_max when the position has changed — the backend will
-    // then reset it to the new position's maximum automatically.
-    const positionChanged = currentPosition !== FPL.selectedPosition;
+    const positionChanged = currentPositions !== FPL.selectedPositions;
     if (!positionChanged) {
         params.set('price_max', parseFloat(document.getElementById('price-slider').value).toFixed(1));
     }

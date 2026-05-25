@@ -72,21 +72,21 @@ class TestApplyTeamFilter:
 
     def test_filters_by_team(self, players_for_filtering):
         """Should return only players from selected team."""
-        result = apply_team_filter(players_for_filtering, "Arsenal")
+        result = apply_team_filter(players_for_filtering, ["Arsenal"])
 
         assert len(result) == 3
         assert all(result["team_name"] == "Arsenal")
 
     def test_empty_team_selection(self, players_for_filtering):
         """Should return all players when no team selected."""
-        result = apply_team_filter(players_for_filtering, "")
+        result = apply_team_filter(players_for_filtering, [])
 
         assert len(result) == 5
 
     def test_missing_team_name_column(self):
         """Should handle missing team_name column."""
         df = pd.DataFrame({"web_name": ["Player"]})
-        result = apply_team_filter(df, "Team")
+        result = apply_team_filter(df, ["Team"])
 
         assert len(result) == 1
 
@@ -126,7 +126,7 @@ class TestApplyAllFilters:
         result = apply_all_filters(
             players_for_filtering,
             price_max=100,
-            selected_team="Arsenal",
+            selected_teams=["Arsenal"],
             search_term="",
             players_df=sample_players_df,
         )
@@ -143,7 +143,7 @@ class TestApplyAllFilters:
         result = apply_all_filters(
             players_for_filtering,
             price_max=80,
-            selected_team="Arsenal",
+            selected_teams=["Arsenal"],
             search_term="",
             players_df=sample_players_df,
         )

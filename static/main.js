@@ -12,7 +12,8 @@ import { initTooltips } from './tooltip.js';
     const cfg = document.getElementById('fpl-config').dataset;
     const FPL = {
         maxGames: parseInt(cfg.maxGames),
-        selectedPosition: cfg.selectedPosition,
+        selectedPositions: cfg.selectedPositions || '',
+        selectedTeams: cfg.selectedTeams || '',
         sortBy: cfg.sortBy,
         sortOrder: cfg.sortOrder,
         page: parseInt(cfg.page),
@@ -24,6 +25,26 @@ import { initTooltips } from './tooltip.js';
     // Override updateGamesLabel to use FPL.maxGames
     const originalUpdateGamesLabel = updateGamesLabel;
     window.updateGamesLabel = (value) => originalUpdateGamesLabel(value, FPL.maxGames);
+
+    // Multi-select dropdown toggle
+    window.toggleMultiselect = function(id) {
+        var el = document.getElementById(id);
+        var wasOpen = el.classList.contains('open');
+        // Close all open multiselects first
+        document.querySelectorAll('.multiselect.open').forEach(function(ms) {
+            ms.classList.remove('open');
+        });
+        if (!wasOpen) el.classList.add('open');
+    };
+
+    // Close multiselects on outside click
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.multiselect')) {
+            document.querySelectorAll('.multiselect.open').forEach(function(ms) {
+                ms.classList.remove('open');
+            });
+        }
+    });
 
     // Expose functions to window for inline HTML handlers
     window.toggleFutureWindow = toggleFutureWindow;
@@ -38,7 +59,7 @@ import { initTooltips } from './tooltip.js';
 
     // Initialize pin functionality on page load
     initPinFunctionality();
-    
+
     // Initialize tooltips
     initTooltips();
 })();

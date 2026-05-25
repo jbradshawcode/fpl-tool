@@ -82,23 +82,58 @@ body {
     margin-top: 6px;
 }
 
-.toggle {
-    font-size: 12px;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    color: var(--ink);
-    background: transparent;
-    border: 2px solid var(--ink);
-    padding: 9px 15px;
-    border-radius: 30px;
+.theme-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
     cursor: pointer;
-    transition: 0.15s;
+    user-select: none;
 }
 
-.toggle:hover {
-    background: var(--ink);
-    color: var(--bg);
+.theme-icon {
+    width: 18px;
+    height: 18px;
+    color: var(--txt3);
+    transition: color 0.2s;
+    flex-shrink: 0;
+}
+
+.theme-toggle .theme-icon:first-child {
+    color: var(--accent-ink);
+}
+
+[data-theme="dark"] .theme-toggle .theme-icon:first-child {
+    color: var(--txt3);
+}
+
+[data-theme="dark"] .theme-toggle .theme-icon:last-child {
+    color: var(--accent-ink);
+}
+
+.theme-track {
+    width: 42px;
+    height: 23px;
+    background: var(--line);
+    border-radius: 12px;
+    position: relative;
+    transition: background 0.25s;
+    flex-shrink: 0;
+}
+
+.theme-knob {
+    position: absolute;
+    top: 2.5px;
+    left: 2.5px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+    transition: transform 0.25s;
+}
+
+[data-theme="dark"] .theme-knob {
+    transform: translateX(19px);
 }
 
 /* ── Season banner ──────────────────────────────────────────────────────── */
@@ -160,6 +195,118 @@ body {
 .field select:focus { border-color: var(--accent); }
 
 .field input::placeholder { color: var(--txt3); }
+
+/* ── Multi-select dropdowns ────────────────────────────────────────────── */
+
+.multiselect {
+    position: relative;
+    min-width: 150px;
+}
+
+.multiselect-display {
+    background: var(--panel);
+    border: 2px solid var(--line);
+    color: var(--ink);
+    font-family: inherit;
+    font-weight: 500;
+    font-size: 14px;
+    padding: 9px 12px;
+    border-radius: 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    transition: border-color 0.2s;
+}
+
+.multiselect.open .multiselect-display {
+    border-color: var(--accent);
+}
+
+.multiselect-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.multiselect-chevron {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+    color: var(--txt3);
+    transition: transform 0.2s;
+}
+
+.multiselect.open .multiselect-chevron {
+    transform: rotate(180deg);
+}
+
+.multiselect-dropdown {
+    display: none;
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: var(--panel);
+    border: 2px solid var(--line);
+    border-radius: 10px;
+    padding: 4px 0;
+    z-index: 100;
+    max-height: 240px;
+    overflow-y: auto;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.multiselect.open .multiselect-dropdown {
+    display: block;
+}
+
+.multiselect-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    transition: background 0.1s;
+}
+
+.multiselect-option:hover {
+    background: var(--line);
+}
+
+.multiselect-option input[type="checkbox"] {
+    display: none;
+}
+
+.multiselect-check {
+    width: 18px;
+    height: 18px;
+    border: 2px solid var(--line);
+    border-radius: 5px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.multiselect-option input:checked + .multiselect-check {
+    background: var(--accent);
+    border-color: var(--accent);
+}
+
+.multiselect-option input:checked + .multiselect-check::after {
+    content: "";
+    width: 5px;
+    height: 9px;
+    border: solid #fff;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+    margin-top: -2px;
+}
 
 /* ── Sliders ────────────────────────────────────────────────────────────── */
 
@@ -630,11 +777,12 @@ input[type="range"]::-moz-range-thumb {
     body { padding: 16px 12px; }
     .topbar { margin-bottom: 20px; padding-bottom: 14px; }
     .brand h1 { font-size: 22px; }
-    .toggle { font-size: 11px; padding: 7px 12px; }
+    .theme-icon { width: 16px; height: 16px; }
 
     .controls { gap: 10px 14px; }
     .field input[type="text"] { min-width: 0; width: 100%; }
     .field select { min-width: 0; }
+    .multiselect { min-width: 0; }
     .slider { min-width: 110px; }
 
     .card {
@@ -664,6 +812,7 @@ input[type="range"]::-moz-range-thumb {
     .field { width: 100%; }
     .field input[type="text"],
     .field select { width: 100%; }
+    .multiselect { min-width: 0; width: 100%; }
     .slider { width: 100%; min-width: 0; }
 
     .listhead { flex-direction: column; align-items: flex-start; gap: 8px; }

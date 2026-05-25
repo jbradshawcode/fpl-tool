@@ -1,6 +1,6 @@
 {# templates/_filters.html
    Context variables required:
-     all_positions, selected_position, all_teams, selected_team,
+     all_positions, selected_positions, all_teams, selected_teams,
      adjust_difficulty, mins_threshold, global_price_min, global_price_max,
      price_max, time_period, max_games, horizon, remaining_games, search_term,
      season_over, new_players_only, has_archived_data
@@ -16,25 +16,61 @@
     </div>
 
     <div class="field">
-        <label for="position-dropdown">Position</label>
-        <select id="position-dropdown" onchange="applyFilters()">
-            <option value="" {% if selected_position == '' %}selected{% endif %}>All positions</option>
-            {% for pos_code, pos_name in all_positions.items() %}
-            <option value="{{ pos_code }}" {% if pos_code == selected_position %}selected{% endif %}>
-                {{ pos_name }}
-            </option>
-            {% endfor %}
-        </select>
+        <label>Position</label>
+        <div class="multiselect" id="position-multiselect">
+            <div class="multiselect-display" onclick="toggleMultiselect('position-multiselect')">
+                <span class="multiselect-text">
+                    {% if selected_positions %}
+                        {{ selected_positions|join(', ') }}
+                    {% else %}
+                        All positions
+                    {% endif %}
+                </span>
+                <svg class="multiselect-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6l4 4 4-4"/></svg>
+            </div>
+            <div class="multiselect-dropdown">
+                {% for pos_code, pos_name in all_positions.items() %}
+                <label class="multiselect-option">
+                    <input type="checkbox" value="{{ pos_code }}"
+                           {% if pos_code in selected_positions %}checked{% endif %}
+                           onchange="applyFilters()">
+                    <span class="multiselect-check"></span>
+                    <span>{{ pos_name }}</span>
+                </label>
+                {% endfor %}
+            </div>
+        </div>
     </div>
 
     <div class="field">
-        <label for="team-dropdown">Team</label>
-        <select id="team-dropdown" onchange="applyFilters()">
-            <option value="">All teams</option>
-            {% for team in all_teams %}
-            <option value="{{ team }}" {% if team == selected_team %}selected{% endif %}>{{ team }}</option>
-            {% endfor %}
-        </select>
+        <label>Team</label>
+        <div class="multiselect" id="team-multiselect">
+            <div class="multiselect-display" onclick="toggleMultiselect('team-multiselect')">
+                <span class="multiselect-text">
+                    {% if selected_teams %}
+                        {% if selected_teams|length <= 2 %}
+                            {{ selected_teams|join(', ') }}
+                        {% else %}
+                            {{ selected_teams|length }} teams
+                        {% endif %}
+                    {% else %}
+                        All teams
+                    {% endif %}
+                </span>
+                <svg class="multiselect-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6l4 4 4-4"/></svg>
+            </div>
+            <div class="multiselect-dropdown">
+                {% for team in all_teams %}
+                <label class="multiselect-option">
+                    <input type="checkbox" value="{{ team }}"
+                           {% if team in selected_teams %}checked{% endif %}
+                           onchange="applyFilters()">
+                    <span class="multiselect-check"></span>
+                    <span>{{ team }}</span>
+                </label>
+                {% endfor %}
+            </div>
+        </div>
     </div>
 
     <div class="slider">

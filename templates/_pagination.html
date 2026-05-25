@@ -1,11 +1,11 @@
 {# templates/_pagination.html
    Context variables required:
      page, position_data (total_pages),
-     selected_position, selected_team, mins_threshold, time_period,
+     selected_positions, selected_teams, mins_threshold, time_period,
      sort_by, sort_order, price_max, adjust_difficulty, horizon,
      search_term, new_players_only
 #}
-{% set base_qs %}position={{ selected_position }}&mins={{ mins_threshold }}&games={{ time_period }}&sort={{ sort_by }}&order={{ sort_order }}&team={{ selected_team }}&price_max={{ price_max }}&adjust_difficulty={{ adjust_difficulty|lower }}&horizon={{ horizon }}&search={{ search_term }}&new_players_only={{ new_players_only|lower }}{% endset %}
+{% set base_qs %}position={{ selected_positions|join(',') }}&mins={{ mins_threshold }}&games={{ time_period }}&sort={{ sort_by }}&order={{ sort_order }}&team={{ selected_teams|join(',') }}&price_max={{ price_max }}&adjust_difficulty={{ adjust_difficulty|lower }}&horizon={{ horizon }}&search={{ search_term }}&new_players_only={{ new_players_only|lower }}{% endset %}
 
 <div class="foot">
 

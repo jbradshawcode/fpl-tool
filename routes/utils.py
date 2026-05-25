@@ -55,14 +55,20 @@ def parse_query_params(flask_request, default_games: int, remaining_games: int) 
         adjust_difficulty = False
         horizon = None
 
+    position_raw = flask_request.args.get("position", "", type=str)
+    selected_positions = [p for p in position_raw.split(",") if p]
+
+    team_raw = flask_request.args.get("team", "", type=str)
+    selected_teams = [t for t in team_raw.split(",") if t]
+
     return {
-        "selected_position": flask_request.args.get("position", "", type=str),
+        "selected_positions": selected_positions,
         "page": flask_request.args.get("page", 1, type=int),
         "mins_threshold": flask_request.args.get("mins", 70, type=int),
         "time_period": flask_request.args.get("games", default_games, type=int),
         "sort_by": flask_request.args.get("sort", "expected_points", type=str),
         "sort_order": flask_request.args.get("order", "desc", type=str),
-        "selected_team": flask_request.args.get("team", "", type=str),
+        "selected_teams": selected_teams,
         "price_max": flask_request.args.get("price_max", None, type=float),
         "search_term": flask_request.args.get("search", "", type=str),
         "adjust_difficulty": adjust_difficulty,

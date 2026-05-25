@@ -60,7 +60,7 @@ def index():
             players_df,
             history_df,
             fdr_df,
-            params["selected_position"],
+            params["selected_positions"],
             params["mins_threshold"],
             params["time_period"],
             meta["max_games"],
@@ -82,7 +82,7 @@ def index():
         df = apply_all_filters(
             df,
             price_max,
-            params["selected_team"],
+            params["selected_teams"],
             params["search_term"],
             players_df,
             params["new_players_only"],
@@ -105,9 +105,19 @@ def index():
         )
 
         # Build template context
+        selected_positions = params["selected_positions"]
+        if len(selected_positions) == 1:
+            position_name = position_names.get(selected_positions[0], "All Players")
+        elif selected_positions:
+            position_name = ", ".join(
+                position_names.get(p, p) for p in selected_positions
+            )
+        else:
+            position_name = "All Players"
+
         position_data = {
-            "name": position_names.get(params["selected_position"], "All Players"),
-            "code": params["selected_position"],
+            "name": position_name,
+            "code": ",".join(selected_positions),
             "players": page_players.to_dict("records"),
             "total_players": total_players,
             "total_pages": total_pages,
@@ -120,7 +130,7 @@ def index():
             "index.html",
             position_data=position_data,
             all_positions=position_names,
-            selected_position=params["selected_position"],
+            selected_positions=selected_positions,
             page=page,
             mins_threshold=params["mins_threshold"],
             time_period=params["time_period"],
@@ -129,7 +139,7 @@ def index():
             sort_by=params["sort_by"],
             sort_order=params["sort_order"],
             all_teams=all_teams,
-            selected_team=params["selected_team"],
+            selected_teams=params["selected_teams"],
             price_max=price_max,
             global_price_min=global_price_min,
             global_price_max=global_price_max,

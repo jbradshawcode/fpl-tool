@@ -36,11 +36,11 @@ def apply_price_filter(df: pd.DataFrame, price_max: float) -> pd.DataFrame:
     return df[df["now_cost"] <= price_max]
 
 
-def apply_team_filter(df: pd.DataFrame, selected_team: str) -> pd.DataFrame:
-    """Filter players by team."""
-    if not selected_team or "team_name" not in df.columns:
+def apply_team_filter(df: pd.DataFrame, selected_teams: list) -> pd.DataFrame:
+    """Filter players by team(s)."""
+    if not selected_teams or "team_name" not in df.columns:
         return df
-    return df[df["team_name"] == selected_team]
+    return df[df["team_name"].isin(selected_teams)]
 
 
 def apply_search_filter(
@@ -68,14 +68,14 @@ def apply_new_players_filter(df: pd.DataFrame, new_players_only: bool) -> pd.Dat
 def apply_all_filters(
     df: pd.DataFrame,
     price_max: float,
-    selected_team: str,
+    selected_teams: list,
     search_term: str,
     players_df: pd.DataFrame,
     new_players_only: bool = False,
 ) -> pd.DataFrame:
     """Apply all filters to player data."""
     df = apply_price_filter(df, price_max)
-    df = apply_team_filter(df, selected_team)
+    df = apply_team_filter(df, selected_teams)
     df = apply_search_filter(df, search_term, players_df)
     df = apply_new_players_filter(df, new_players_only)
     return df

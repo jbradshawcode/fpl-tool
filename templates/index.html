@@ -18,9 +18,17 @@
                 <div class="kick">Fantasy · Gameweek model</div>
                 <h1>Expected Points</h1>
             </div>
-            <button class="toggle" onclick="toggleTheme()">
-                <span id="theme-label">Dark mode</span>
-            </button>
+            <div class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">
+                <svg class="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+                    <circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
+                </svg>
+                <div class="theme-track">
+                    <div class="theme-knob"></div>
+                </div>
+                <svg class="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                </svg>
+            </div>
         </div>
 
         {% if season_over %}
@@ -37,7 +45,8 @@
 
     <div id="fpl-config"
         data-max-games="{{ max_games }}"
-        data-selected-position="{{ selected_position }}"
+        data-selected-positions="{{ selected_positions|join(',') }}"
+        data-selected-teams="{{ selected_teams|join(',') }}"
         data-sort-by="{{ sort_by }}"
         data-sort-order="{{ sort_order }}"
         data-page="{{ page }}">
@@ -46,16 +55,12 @@
         (function() {
             var t = localStorage.getItem('fpl-theme') || 'light';
             document.documentElement.setAttribute('data-theme', t);
-            var label = document.getElementById('theme-label');
-            if (label) label.textContent = t === 'light' ? 'Dark mode' : 'Light mode';
         })();
         function toggleTheme() {
             var html = document.documentElement;
             var isDark = html.getAttribute('data-theme') === 'dark';
-            var newTheme = isDark ? 'light' : 'dark';
-            html.setAttribute('data-theme', newTheme);
-            localStorage.setItem('fpl-theme', newTheme);
-            document.getElementById('theme-label').textContent = isDark ? 'Dark mode' : 'Light mode';
+            html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+            localStorage.setItem('fpl-theme', isDark ? 'light' : 'dark');
         }
     </script>
     <script type="module" src="{{ url_for('static', filename='main.js') }}"></script>

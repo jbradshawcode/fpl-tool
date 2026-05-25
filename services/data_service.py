@@ -197,7 +197,7 @@ def fetch_players_for_analysis(
     players_df: pd.DataFrame,
     history_df: pd.DataFrame,
     fdr_df: pd.DataFrame,
-    selected_position: str,
+    selected_positions: list,
     mins_threshold: int,
     time_period: int,
     max_games: int,
@@ -206,23 +206,26 @@ def fetch_players_for_analysis(
 ) -> pd.DataFrame:
     """Fetch player expected points data for analysis.
 
-    Handles single position or all positions based on selection.
+    Handles multiple positions or all positions based on selection.
     """
     fdr_arg = fdr_df if adjust_difficulty else None
     horizon_arg = horizon if adjust_difficulty else None
 
-    if selected_position:
+    positions = (
+        selected_positions if selected_positions else ["GKP", "DEF", "MID", "FWD"]
+    )
+
+    if len(positions) == 1:
         return calculations.expected_points_per_90(
             history_df=history_df,
             players_df=players_df,
-            position=selected_position,
+            position=positions[0],
             mins_threshold=mins_threshold / 100,
             time_period=time_period if time_period < max_games else None,
             fdr_df=fdr_arg,
             horizon=horizon_arg,
         )
 
-    # Combine all positions
     dfs = [
         calculations.expected_points_per_90(
             history_df=history_df,
@@ -233,6 +236,6 @@ def fetch_players_for_analysis(
             fdr_df=fdr_arg,
             horizon=horizon_arg,
         )
-        for pos in ["GKP", "DEF", "MID", "FWD"]
+        for pos in positions
     ]
     return pd.concat(dfs, ignore_index=True)
